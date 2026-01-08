@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 // DEBES REEMPLAZAR ESTOS VALORES CON TUS CLAVES REALES DE SUPABASE
 const String supabaseUrl =  'https://ptylwwjhvoznaivzfpsa.supabase.co';
 const String supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB0eWx3d2podm96bmFpdnpmcHNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5NjMxNzksImV4cCI6MjA3ODUzOTE3OX0.xIa5OR6twP-XYUk5-wo9YEEUrD7nx4J_V10M6mGS9os'; // 
-const String rpcFunction = 'sp_catcusuariosn';
+const String rpcFunction = 'sp_catcusuarios_v2';
 // ----------------------------------------------------
 // MODELO DE TEMA DINÁMICO
 // ----------------------------------------------------

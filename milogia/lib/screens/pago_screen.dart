@@ -1,37 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:milogia/screens/app_drawer.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
 import '../models/user_model.dart';
 import '../models/pago_model.dart'; 
+import '../config/auth_config.dart'; 
 import 'app_drawer.dart';
-// Importa tus otras pantallas aquí
 
-//import 'home_screen.dart';
-//import 'documents_screen.dart'; 
-//import 'emergencies_screen.dart';
-//import 'jobs_screen.dart';
-
-//import 'profile_edit_screen.dart';
-
-// Clases auxiliares solo para la vista (ViewModel helpers)
-//class PagoConcepto {
- // final ConceptoCatalogo concepto;
-//  int cantidad;
-//  PagoConcepto({required this.concepto, this.cantidad = 1});
-//  double get subtotal {
-//    // Lógica para obtener el costo del primer detalle o 0.0
-//    // En un escenario real, deberías filtrar el detalle específico por grado/logia aquí también
-//    if (concepto.detalles.isEmpty) return 0.0;
-//    return concepto.detalles.first.Costo * cantidad;
-//  }
-  
-//  // Helper para obtener el precio unitario visualmente
-//  double get precioUnitario {
-//     if (concepto.detalles.isEmpty) return 0.0;
-//     return concepto.detalles.first.Costo;
-//  }
-//}
 class PagoConcepto {
   final ConceptoCatalogo concepto;
   int cantidad;
@@ -60,8 +34,14 @@ class PagoDetalle {
 class PagoScreen extends StatefulWidget {
   final RootModel root;
   final PerfilOpcion selectedProfile;
+  final int initialTab; // 0 for Mis Pagos, 1 for Validar, 2 for Cobro
 
-  const PagoScreen({super.key, required this.root, required this.selectedProfile});
+  const PagoScreen({
+    super.key, 
+    required this.root, 
+    required this.selectedProfile,
+    this.initialTab = 0,
+  });
 
   @override
   State<PagoScreen> createState() => _PagoScreenState();
@@ -75,6 +55,15 @@ class _PagoScreenState extends State<PagoScreen> {
   List<ConceptoCatalogo> _conceptosCatalogo = [];
   List<PagoConcepto> _conceptosSeleccionados = [];
 
+  // --- VARIABLES PARA TESORERÍA ---
+  List<PagoReportado> _reportesPendientes = [];
+  bool _isLoadingReportes = false;
+  ListaLogiasPorUsuario? _selectedMemberForCash;
+  List<PagoConcepto> _conceptosCobroEfectivo = [];
+  final _folioEfectivoController = TextEditingController();
+  bool _isSavingCash = false;
+  bool _hasFetchedReportes = false; // Flag para evitar bucle de carga
+
   @override
   void initState() {
     super.initState();
@@ -82,16 +71,7 @@ class _PagoScreenState extends State<PagoScreen> {
     _pagosFuture = _consultarPagos();
     
     // Pre-seleccionar un concepto si existe
-    if (_conceptosCatalogo.isNotEmpty) {
-      final firstConcepto = _conceptosCatalogo.first;
-      final firstPrice = _getCostoUnitario(firstConcepto);
-
-      _conceptosSeleccionados.add(PagoConcepto(
-        concepto: firstConcepto,
-        precioUnitario: firstPrice, // ARGUMENTO REQUERIDO AGREGADO
-        cantidad: 1,
-      ));
-    }
+    // Fix: _loadConceptosFromCatalog ya inicializa la selección, eliminamos la duplicidad aquí.
   }
 
   /// Carga los conceptos disponibles desde el RootModel (local)
@@ -138,11 +118,146 @@ class _PagoScreenState extends State<PagoScreen> {
     }
   }
 
+  // --- LÓGICA DE TESORERÍA ---
+
+  Future<void> _fetchReportesPendientes() async {
+    setState(() => _isLoadingReportes = true);
+    try {
+      final response = await _supabase
+          .from('movcPagosReportados')
+          .select()
+          .eq('iddLogia', widget.selectedProfile.idLogia)
+          .eq('Estatus', 'Revision')
+          .order('FechaReporte', ascending: false);
+
+      if (mounted) {
+        setState(() {
+          _reportesPendientes = (response as List).map((e) => PagoReportado.fromJson(e)).toList();
+          _isLoadingReportes = false;
+          _hasFetchedReportes = true;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetchReportes: $e');
+      if (mounted) setState(() => _isLoadingReportes = false);
+    }
+  }
+
+  Future<void> _approveReport(PagoReportado reporte) async {
+    try {
+      final result = await _supabase.rpc('confirmar_pago_reportado', params: {
+        'p_id_reporte': reporte.idReporte,
+        'p_id_forma_pago': 1, // Transferencia
+      });
+
+      //if (reporte.UrlComprobante != null) {
+        //print(reporte.UrlComprobante!);
+        //await _supabase.storage.from('radios_docs').remove([reporte.UrlComprobante!]);
+      //}
+
+     if (reporte.UrlComprobante != null) {
+        try {
+          // 1. Limpieza de URL (Igual que antes, esto estaba bien)
+          final rawUrl = reporte.UrlComprobante!;
+          final decodedUrl = Uri.decodeFull(rawUrl);
+          
+          String cleanPath = decodedUrl;
+          if (decodedUrl.contains('/radios_docs/')) {
+            cleanPath = decodedUrl.split('/radios_docs/').last;
+          }
+
+          print('RPC: Intentando borrar path: $cleanPath');
+
+          // --- CAMBIO CLAVE AQUÍ ---
+          // Usamos RPC para llamar a la función administradora
+          final response = await _supabase.rpc(
+            'delete_file_admin', 
+            params: {
+              'bucket_name': 'radios_docs',
+              'object_path': cleanPath,
+            }
+          );
+          
+          print('Respuesta RPC: $response'); // Debería decir {"success": true, "deleted": 1}
+
+        } catch (e) {
+          print('Error RPC: $e');
+          // Opcional: Mostrar alerta visual si falla
+          if (mounted) {
+             ScaffoldMessenger.of(context).showSnackBar(
+               SnackBar(content: Text('Error borrando imagen: $e')),
+             );
+          }
+        }
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Pago aprobado con éxito.')));
+        _fetchReportesPendientes();
+        _pagosFuture = _consultarPagos(); // Recargar mis pagos por si acaso
+      }
+    } catch (e) {
+      if (mounted) _showErrorDialog('Error', 'No se pudo aprobar: $e; ${reporte.UrlComprobante!}');
+    }
+  }
+
+  Future<void> _saveCashPayment() async {
+    if (_selectedMemberForCash == null || _conceptosCobroEfectivo.isEmpty) {
+      _showErrorDialog('Faltan datos', 'Selecciona un miembro y al menos un concepto.');
+      return;
+    }
+
+    setState(() => _isSavingCash = true);
+
+    try {
+      final total = _conceptosCobroEfectivo.fold<double>(0, (sum, item) => sum + item.subtotal);
+      final folio = _folioEfectivoController.text.isNotEmpty 
+          ? _folioEfectivoController.text 
+          : 'EFEC-${DateTime.now().millisecondsSinceEpoch}';
+
+      // 1. Insertar cabecera en movcPagos (idFormaPago = 3)
+      final insertRes = await _supabase.from('movcPagos').insert({
+        'idUsuario': _selectedMemberForCash!.idUsuario,
+        'Fecha': DateTime.now().toIso8601String(),
+        'Folio': folio,
+        'Importe': total,
+        'idFormaPago': 3, // Efectivo
+        'Activo': true,
+      }).select().single();
+
+      final idPago = insertRes['idPago'] as int;
+
+      // 2. Insertar detalles
+      final detalles = _conceptosCobroEfectivo.map((pc) => {
+        'idPago': idPago,
+        'iddConcepto': pc.concepto.idConcepto,
+        'Cantidad': pc.cantidad,
+      }).toList();
+
+      await _supabase.from('movdPagos').insert(detalles);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Cobro de \$${total} registrado con éxito.')));
+        setState(() {
+          _selectedMemberForCash = null;
+          _conceptosCobroEfectivo = [];
+          _folioEfectivoController.clear();
+          _isSavingCash = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        _showErrorDialog('Error', 'No se pudo registrar: $e');
+        setState(() => _isSavingCash = false);
+      }
+    }
+  }
+
   /// Consulta los pagos históricos vía RPC (Stored Procedure)
   Future<List<PagoModel>> _consultarPagos() async {
     try {
       final response = await _supabase.rpc(
-        'sp_catcusuariosn', 
+        rpcFunction, 
         params: {
           'popcion': 7, 
           'pidusuario': widget.root.user.idUsuario,
@@ -154,7 +269,9 @@ class _PagoScreenState extends State<PagoScreen> {
           'pfechanacimiento': '',
           'pdireccion': '',
           'pcorreoelectronico': '',
-          'pfoto': ''
+          'pfoto': '',
+          'pidgrado': null,
+          'pidperfil': null
         },
       );
 
@@ -165,7 +282,7 @@ class _PagoScreenState extends State<PagoScreen> {
 
       // Mapeo manual porque el SP devuelve claves con Mayúscula (SQL Server style) 
       // y PagoModel.fromJson espera camelCase o minúsculas según tu modelo.
-      final pagos = data.map((e) {
+      List<PagoModel> pagos = data.map((e) {
         return PagoModel(
           idPago: e['idPago'] ?? e['idpago'] ?? 0,
           idUsuario: widget.root.user.idUsuario, // Dato conocido
@@ -176,6 +293,27 @@ class _PagoScreenState extends State<PagoScreen> {
           folio: e['Folio']?.toString() ?? '',
         );
       }).toList();
+
+      // FILTRO: Excluir pagos que ya tienen un reporte en 'Revision'
+      try {
+        final pendingReportsRes = await _supabase
+            .from('movcPagosReportados')
+            .select('idPago')
+            .eq('idUsuario', widget.root.user.idUsuario)
+            .eq('Estatus', 'Revision');
+        
+        final List<int> pendingPaymentIds = (pendingReportsRes as List)
+            .map((r) => r['idPago'] as int?)
+            .where((id) => id != null) // Filtra nulos
+            .cast<int>()
+            .toList();
+
+        if (pendingPaymentIds.isNotEmpty) {
+          pagos = pagos.where((p) => !pendingPaymentIds.contains(p.idPago)).toList();
+        }
+      } catch (e) {
+        debugPrint('Error filtrando pagos reportados: $e');
+      }
 
       return pagos;
     } catch (e) {
@@ -695,8 +833,48 @@ Future<void> _showPaymentDetailDialog(PagoModel pago) async {
   @override
   Widget build(BuildContext context) {
     final theme = _getThemeColors();
-    // Lógica: Si el perfil es 7 (Tesorero), puede ver el botón de subir estados.
-    final canUploadStatements = widget.selectedProfile.idPerfil == 7;
+    final isTreasurer = widget.selectedProfile.idPerfil == 7;
+
+    if (isTreasurer) {
+      return DefaultTabController(
+        length: 3,
+        initialIndex: widget.initialTab,
+        child: Scaffold(
+          backgroundColor: theme['bg'],
+          appBar: AppBar(
+            title: Text('Tesorería - ${widget.selectedProfile.LogiaNombre}', style: TextStyle(color: theme['text'])),
+            backgroundColor: theme['bg'],
+            elevation: 0,
+            iconTheme: IconThemeData(color: theme['text']),
+            bottom: TabBar(
+              labelColor: theme['accent'],
+              unselectedLabelColor: theme['text']?.withOpacity(0.6),
+              indicatorColor: theme['accent'],
+              tabs: const [
+                Tab(icon: Icon(Icons.person), text: "Mis Pagos"),
+                Tab(icon: Icon(Icons.fact_check), text: "Validar"),
+                Tab(icon: Icon(Icons.point_of_sale), text: "Cobro"),
+              ],
+            ),
+          ),
+          drawer: AppDrawer(root: widget.root, selectedProfile: widget.selectedProfile),
+          body: TabBarView(
+            children: [
+              _buildMainPaymentsList(theme),
+              _buildValidatorTab(theme),
+              _buildCashCollectorTab(theme),
+            ],
+          ),
+          floatingActionButton: FloatingActionButton.extended(
+            backgroundColor: theme['accent'],
+            foregroundColor: Colors.white,
+            onPressed: _showConceptSelectionDialog,
+            icon: const Icon(Icons.add),
+            label: const Text("Nuevo Pago"),
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: theme['bg'],
@@ -707,138 +885,691 @@ Future<void> _showPaymentDetailDialog(PagoModel pago) async {
         iconTheme: IconThemeData(color: theme['text']),
       ),
       drawer: AppDrawer(
-      root: widget.root, 
-      selectedProfile: widget.selectedProfile
-    ),
-      body: FutureBuilder<List<PagoModel>>(
-        future: _pagosFuture,
-        builder: (context, snap) {
-          if (snap.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator(color: theme['accent']));
-          }
-          if (snap.hasError) {
-            return Center(child: Text('Error al cargar pagos.', style: TextStyle(color: theme['text'])));
-          }
-          
-          final pagos = snap.data ?? [];
-          
-          return Column(
-            children: [
-              // Header visual
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: theme['card'], 
-                  borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
-                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)]
-                ),
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      backgroundColor: theme['bg'],
-                      radius: 24,
-                      child: Icon(Icons.account_balance_wallet, color: theme['accent']),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Estado de Cuenta', style: TextStyle(color: theme['text'], fontWeight: FontWeight.bold, fontSize: 16)),
-                          Text(widget.selectedProfile.LogiaNombre, style: TextStyle(color: theme['text']?.withOpacity(0.7), fontSize: 12)),
-                        ],
-                      ),
-                    ),
-                    if (canUploadStatements)
-                      IconButton(
-                        icon: const Icon(Icons.upload_file),
-                        color: theme['accent'],
-                        tooltip: "Subir Estados de Cuenta",
-                        onPressed: _subirEstadosDeCuenta,
-                      ),
-                  ],
-                ),
-              ),
-              
-              const SizedBox(height: 10),
-
-              // Lista de Pagos
-              Expanded(
-                child: pagos.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.receipt_long, size: 64, color: Colors.grey[400]),
-                            const SizedBox(height: 16),
-                            Text('No tienes pagos registrados.', style: TextStyle(color: theme['text'])),
-                          ],
-                        ),
-                      )
-                    : RefreshIndicator(
-                        onRefresh: () async {
-                          setState(() { _pagosFuture = _consultarPagos(); });
-                        },
-                        child: ListView.builder(
-                          padding: const EdgeInsets.only(bottom: 80), // Espacio para el FAB
-                          itemCount: pagos.length,
-                          itemBuilder: (context, i) {
-                            final p = pagos[i];
-                            // Lógica de visualización basada en si tiene folio (pagado) o no
-                            final isProcessed = (p.folio.isNotEmpty && p.folio != '0' && p.idFormaPago == 2);
-                            //print ('Ref: ${p.idPago} idFormaPago: ${p.idFormaPago} Folio: ${p.folio}');
-                            final statusText = isProcessed ? 'Procesado' : 'Pendiente';
-                            final statusColor = isProcessed ? Colors.green : Colors.orange;
-
-                            return Card(
-                              color: theme['card'],
-                              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                              elevation: 2,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              child: ListTile(
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                leading: CircleAvatar(
-                                  backgroundColor: statusColor.withOpacity(0.2),
-                                  child: Icon(isProcessed ? Icons.check : Icons.access_time, color: statusColor),
-                                ),
-                                title: Text(
-                                  NumberFormat.currency(locale: 'es_MX', symbol: '\$').format(p.importe),
-                                  style: TextStyle(color: theme['text'], fontWeight: FontWeight.bold, fontSize: 16),
-                                ),
-                                subtitle: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const SizedBox(height: 4),
-                                    Text('Ref: ${p.idPago}', style: TextStyle(color: theme['text']?.withOpacity(0.6), fontSize: 12)),
-                                    Text(p.fecha, style: TextStyle(color: theme['text']?.withOpacity(0.8), fontSize: 12)),
-                                  ],
-                                ),
-                                trailing: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    Text(statusText, style: TextStyle(color: statusColor, fontWeight: FontWeight.bold, fontSize: 12)),
-                                    const Icon(Icons.chevron_right, color: Colors.grey, size: 16),
-                                  ],
-                                ),
-                                onTap: () => _showPaymentDetailDialog(p),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-              ),
-            ],
-          );
-        },
+        root: widget.root, 
+        selectedProfile: widget.selectedProfile
       ),
+      body: _buildMainPaymentsList(theme),
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: theme['accent'],
         foregroundColor: Colors.white,
         onPressed: _showConceptSelectionDialog,
         icon: const Icon(Icons.add),
         label: const Text("Nuevo Pago"),
+      ),
+    );
+  }
+
+  Widget _buildMainPaymentsList(Map<String, Color> theme) {
+    final canUploadStatements = widget.selectedProfile.idPerfil == 7;
+    return FutureBuilder<List<PagoModel>>(
+      future: _pagosFuture,
+      builder: (context, snap) {
+        if (snap.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator(color: theme['accent']));
+        }
+        if (snap.hasError) {
+          return Center(child: Text('Error al cargar pagos.', style: TextStyle(color: theme['text'])));
+        }
+        
+        final pagos = snap.data ?? [];
+        
+        return Column(
+          children: [
+            // Header visual
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: theme['card'], 
+                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)]
+              ),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    backgroundColor: theme['bg'],
+                    radius: 24,
+                    child: Icon(Icons.account_balance_wallet, color: theme['accent']),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Estado de Cuenta', style: TextStyle(color: theme['text'], fontWeight: FontWeight.bold, fontSize: 16)),
+                        Text(widget.selectedProfile.LogiaNombre, style: TextStyle(color: theme['text']?.withOpacity(0.7), fontSize: 12)),
+                      ],
+                    ),
+                  ),
+                  if (canUploadStatements)
+                    IconButton(
+                      icon: const Icon(Icons.upload_file),
+                      color: theme['accent'],
+                      tooltip: "Subir Estados de Cuenta",
+                      onPressed: _subirEstadosDeCuenta,
+                    ),
+                ],
+              ),
+            ),
+            
+            const SizedBox(height: 10),
+
+            // Lista de Pagos
+            Expanded(
+              child: pagos.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.receipt_long, size: 64, color: Colors.grey[400]),
+                          const SizedBox(height: 16),
+                          Text('No tienes pagos registrados.', style: TextStyle(color: theme['text'])),
+                        ],
+                      ),
+                    )
+                  : RefreshIndicator(
+                      onRefresh: () async {
+                        setState(() { _pagosFuture = _consultarPagos(); });
+                      },
+                      child: ListView.builder(
+                        padding: const EdgeInsets.only(bottom: 80), // Espacio para el FAB
+                        itemCount: pagos.length,
+                        itemBuilder: (context, i) {
+                          final p = pagos[i];
+                          // Lógica de visualización basada en si tiene folio (pagado) o no
+                          final isProcessed = (p.folio.isNotEmpty && p.folio != '0' && p.idFormaPago == 2);
+                          final statusText = isProcessed ? 'Procesado' : 'Pendiente';
+                          final statusColor = isProcessed ? Colors.green : Colors.orange;
+
+                          return Card(
+                            color: theme['card'],
+                            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                            elevation: 2,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            child: ListTile(
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              leading: CircleAvatar(
+                                backgroundColor: statusColor.withOpacity(0.2),
+                                child: Icon(isProcessed ? Icons.check : Icons.access_time, color: statusColor),
+                              ),
+                              title: Text(
+                                NumberFormat.currency(locale: 'es_MX', symbol: '\$').format(p.importe),
+                                style: TextStyle(color: theme['text'], fontWeight: FontWeight.bold, fontSize: 16),
+                              ),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const SizedBox(height: 4),
+                                  Text('Ref: ${p.idPago}', style: TextStyle(color: theme['text']?.withOpacity(0.6), fontSize: 12)),
+                                  Text(p.fecha, style: TextStyle(color: theme['text']?.withOpacity(0.8), fontSize: 12)),
+                                ],
+                              ),
+                              trailing: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text(statusText, style: TextStyle(color: statusColor, fontWeight: FontWeight.bold, fontSize: 12)),
+                                  const Icon(Icons.chevron_right, color: Colors.grey, size: 16),
+                                ],
+                              ),
+                              onTap: () => _showPaymentDetailDialog(p),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildValidatorTab(Map<String, Color> theme) {
+    if (!_hasFetchedReportes && !_isLoadingReportes) {
+      // Usamos microtask para no llamar setState durante el build
+      Future.microtask(() => _fetchReportesPendientes());
+    }
+
+    return _isLoadingReportes
+        ? const Center(child: CircularProgressIndicator())
+        : _reportesPendientes.isEmpty
+            ? Center(child: Text('No hay transferencias por validar.', style: TextStyle(color: theme['text'])))
+            : RefreshIndicator(
+                onRefresh: _fetchReportesPendientes,
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: _reportesPendientes.length,
+                  itemBuilder: (context, index) {
+                    final r = _reportesPendientes[index];
+                    final miembro = widget.root.catalogos.listaLogiasPorUsuario.firstWhere(
+                      (m) => m.idUsuario == r.idUsuario,
+                      orElse: () => ListaLogiasPorUsuario(Nombre: 'Usuario Desconocido', idUsuario: 0, FechaNacimiento: '', perfiles: []),
+                    );
+
+                    return Card(
+                      color: theme['card'],
+                      elevation: 2,
+                      margin: const EdgeInsets.only(bottom: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      child: ExpansionTile(
+                        leading: CircleAvatar(
+                          backgroundColor: theme['bg'],
+                          child: Icon(Icons.transfer_within_a_station, color: theme['accent']),
+                        ),
+                        title: Text(
+                          miembro.Nombre,
+                          style: TextStyle(color: theme['text'], fontWeight: FontWeight.bold, fontSize: 15),
+                        ),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Monto: \$${r.Monto} - Ref: ${r.ReferenciaUnica ?? "N/A"}',
+                              style: TextStyle(color: theme['text']?.withOpacity(0.7), fontSize: 13),
+                            ),
+                            if (r.idPago != null)
+                              Text(
+                                'VINCULADO A PAGO #${r.idPago}',
+                                style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 11),
+                              ),
+                          ],
+                        ),
+                        iconColor: theme['accent'],
+                        collapsedIconColor: theme['text']?.withOpacity(0.5),
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(16.0),
+                            decoration: BoxDecoration(
+                              color: theme['bg']?.withOpacity(0.3),
+                              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _infoRow('Fecha Pago Real:', r.FechaPagoReal, theme['text']!),
+                                _infoRow('Folio Bancario:', r.FolioBancario ?? "N/A", theme['text']!),
+                                const SizedBox(height: 15),
+                                if (r.UrlComprobante != null)
+                                  InkWell(
+                                    onTap: () => _showFullImage(r.UrlComprobante!),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(10),
+                                      child: Stack(
+                                        alignment: Alignment.center,
+                                        children: [
+                                          Image.network(
+                                            _supabase.storage.from('radios_docs').getPublicUrl(r.UrlComprobante!),
+                                            height: 200,
+                                            width: double.infinity,
+                                            fit: BoxFit.cover,
+                                          ),
+                                          Container(
+                                            padding: const EdgeInsets.all(8),
+                                            decoration: BoxDecoration(color: Colors.black45, borderRadius: BorderRadius.circular(20)),
+                                            child: const Icon(Icons.fullscreen, color: Colors.white),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                const SizedBox(height: 20),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                  children: [
+                                    Expanded(
+                                      child: OutlinedButton.icon(
+                                        onPressed: () => _rejectReport(r),
+                                        icon: const Icon(Icons.close, color: Colors.red, size: 18),
+                                        label: const Text('RECHAZAR', style: TextStyle(color: Colors.red, fontSize: 13)),
+                                        style: OutlinedButton.styleFrom(side: const BorderSide(color: Colors.red)),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: ElevatedButton.icon(
+                                        onPressed: () => _approveReport(r),
+                                        icon: const Icon(Icons.check, color: Colors.white, size: 18),
+                                        label: const Text('APROBAR', style: TextStyle(color: Colors.white, fontSize: 13)),
+                                        style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              );
+  }
+
+  Future<void> _rejectReport(PagoReportado reporte) async {
+    String motivo = '';
+    await showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Rechazar Pago'),
+        content: TextField(
+          decoration: const InputDecoration(labelText: 'Motivo del rechazo'),
+          onChanged: (v) => motivo = v,
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+          ElevatedButton(
+            onPressed: () async {
+              print('DEBUG: Botón RECHAZAR presionado');
+              print('DEBUG: Motivo: $motivo');
+              print('DEBUG: ID Reporte: ${reporte.idReporte}');
+              
+              try {
+                  // USO DE RPC PARA EVITAR PROBLEMAS DE RLS
+                  final res = await _supabase.rpc('rechazar_pago_reportado', params: {
+                    'p_id_reporte': reporte.idReporte,
+                    'p_motivo': motivo,
+                  });
+                  print('DEBUG: RPC Mensaje respuesta: $res');
+              } catch (e) {
+                  print('DEBUG: ERROR RPC: $e');
+              }
+
+              // BORRAR IMAGEN DEL BUCKET SI ES RECHAZADO (Para no usar espacio innecesario)
+              if (reporte.UrlComprobante != null) {
+                try {
+                  final rawUrl = reporte.UrlComprobante!;
+                  final decodedUrl = Uri.decodeFull(rawUrl);
+                  
+                  String cleanPath = decodedUrl;
+                  if (decodedUrl.contains('/radios_docs/')) {
+                    cleanPath = decodedUrl.split('/radios_docs/').last;
+                  }
+
+                  await _supabase.rpc(
+                    'delete_file_admin', 
+                    params: {
+                      'bucket_name': 'radios_docs',
+                      'object_path': cleanPath,
+                    }
+                  );
+                } catch (e) {
+                   debugPrint('Error borrando imagen al rechazar: $e');
+                }
+              }
+
+              Navigator.pop(ctx);
+              _fetchReportesPendientes();
+            },
+            child: const Text('Rechazar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+
+  Widget _buildCashCollectorTab(Map<String, Color> theme) {
+    final miembros = widget.root.catalogos.listaLogiasPorUsuario.where((m) {
+      return m.perfiles.any((p) => p.idLogia == widget.selectedProfile.idLogia);
+    }).toList();
+
+    double totalCobro = _conceptosCobroEfectivo.fold(0.0, (s, item) => s + item.subtotal);
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Sección de Selección de Miembro
+          Card(
+            color: theme['card'],
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            elevation: 2,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.person_search, color: theme['accent'], size: 20),
+                      const SizedBox(width: 8),
+                      Text('1. Seleccionar Miembro', style: TextStyle(color: theme['text'], fontSize: 15, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<ListaLogiasPorUsuario>(
+                    value: _selectedMemberForCash,
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: theme['bg']?.withOpacity(0.3),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                      prefixIcon: Icon(Icons.person, color: theme['accent']),
+                      hintText: "Selecciona un hermano",
+                    ),
+                    items: miembros.map((m) => DropdownMenuItem(value: m, child: Text(m.Nombre, style: const TextStyle(fontSize: 14)))).toList(),
+                    onChanged: (v) => setState(() => _selectedMemberForCash = v),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          
+          const SizedBox(height: 16),
+          
+          const SizedBox(height: 16),
+          
+          // Sección de Conceptos (Envuelta en Card Unificada)
+          Card(
+            color: theme['card'],
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            elevation: 2,
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.shopping_cart_checkout, color: theme['accent'], size: 20),
+                          const SizedBox(width: 8),
+                          Text('2. Conceptos', style: TextStyle(color: theme['text'], fontSize: 15, fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                      // Botón "Agregar" en el header si hay elementos
+                       if (_conceptosCobroEfectivo.isNotEmpty)
+                        TextButton.icon(
+                          onPressed: () {
+                            if (_conceptosCatalogo.isNotEmpty) {
+                              final first = _conceptosCatalogo.first;
+                              setState(() {
+                                  _conceptosCobroEfectivo.add(PagoConcepto(
+                                    concepto: first,
+                                    cantidad: 1,
+                                    precioUnitario: _getCostoUnitario(first),
+                                  ));
+                                });
+                            }
+                          },
+                          icon: Icon(Icons.add_circle, color: theme['accent'], size: 20),
+                          label: Text('Agregar', style: TextStyle(color: theme['accent'])),
+                          style: TextButton.styleFrom(padding: EdgeInsets.zero, tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Lista de conceptos editables
+                  if (_conceptosCobroEfectivo.isEmpty)
+                    InkWell(
+                      onTap: () {
+                        if (_conceptosCatalogo.isNotEmpty) {
+                            final first = _conceptosCatalogo.first;
+                            setState(() {
+                              _conceptosCobroEfectivo.add(PagoConcepto(
+                                concepto: first,
+                                cantidad: 1,
+                                precioUnitario: _getCostoUnitario(first),
+                              ));
+                            });
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.withOpacity(0.3), style: BorderStyle.solid), // Usando solid ;)
+                          borderRadius: BorderRadius.circular(12),
+                          color: theme['bg']?.withOpacity(0.5),
+                        ),
+                        child: const Center(child: Text('+ Agregar primer concepto', style: TextStyle(color: Colors.grey))),
+                      ),
+                    )
+                  else
+                    ..._conceptosCobroEfectivo.asMap().entries.map((entry) {
+                      final idx = entry.key;
+                      final pc = entry.value;
+
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: theme['bg']?.withOpacity(0.4),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: theme['bg'] ?? Colors.grey.shade200),
+                        ),
+                        child: Column(
+                          children: [
+                            DropdownButton<ConceptoCatalogo>(
+                              isExpanded: true,
+                              value: pc.concepto,
+                              underline: Container(), // Sin línea fea
+                              icon: const Icon(Icons.arrow_drop_down),
+                              isDense: true,
+                              onChanged: (newVal) {
+                                if (newVal == null) return;
+                                final newPrice = _getCostoUnitario(newVal);
+                                setState(() {
+                                  _conceptosCobroEfectivo[idx] = PagoConcepto(
+                                    concepto: newVal,
+                                    cantidad: pc.cantidad,
+                                    precioUnitario: newPrice,
+                                  );
+                                });
+                              },
+                              items: _conceptosCatalogo.map((c) {
+                                final p = _getCostoUnitario(c); 
+                                return DropdownMenuItem(
+                                  value: c, 
+                                  child: Text('${c.Descripcion} (\$${p.toStringAsFixed(0)})', overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 14, color: theme['text']))
+                                );
+                              }).toList(),
+                            ),
+                            const Divider(height: 20),
+                            Row(
+                              children: [
+                                const Text("Cant: ", style: TextStyle(fontSize: 13)),
+                                SizedBox(
+                                  width: 50,
+                                  child: TextFormField(
+                                    initialValue: pc.cantidad.toString(),
+                                    keyboardType: TextInputType.number,
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                                      decoration: const InputDecoration(
+                                      isDense: true,
+                                      contentPadding: EdgeInsets.symmetric(vertical: 4),
+                                      border: InputBorder.none, // Más limpio
+                                    ),
+                                    onChanged: (v) {
+                                      final n = int.tryParse(v) ?? 1;
+                                      setState(() => _conceptosCobroEfectivo[idx].cantidad = n > 0 ? n : 1);
+                                    },
+                                  ),
+                                ),
+                                const Spacer(),
+                                Text('\$${pc.subtotal.toStringAsFixed(2)}', style: TextStyle(fontWeight: FontWeight.bold, color: theme['text'], fontSize: 15)),
+                                IconButton(
+                                  icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(),
+                                  onPressed: () {
+                                      setState(() => _conceptosCobroEfectivo.removeAt(idx));
+                                  }
+                                ),
+                              ],
+                            )
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 16),
+          
+          // Sección de Folio y Registro
+          Card(
+            color: theme['card'],
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            elevation: 2,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.receipt_long, color: theme['accent'], size: 20),
+                      const SizedBox(width: 8),
+                      Text('3. Folio Recibo Físico', style: TextStyle(color: theme['text'], fontSize: 15, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _folioEfectivoController,
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: theme['bg']?.withOpacity(0.3),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                      hintText: 'Ej: A-1234',
+                      hintStyle: TextStyle(color: theme['text']?.withOpacity(0.3)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          
+          const SizedBox(height: 25),
+          
+          // Resumen y Botón Final
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(colors: [theme['accent']!, theme['accent']!.withOpacity(0.8)]),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [BoxShadow(color: theme['accent']!.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4))],
+            ),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('TOTAL A COBRAR:', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
+                    Text(NumberFormat.currency(locale: 'es_MX', symbol: '\$').format(totalCobro), 
+                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: theme['accent'],
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      elevation: 0,
+                    ),
+                    onPressed: _isSavingCash ? null : _saveCashPayment,
+                    child: _isSavingCash
+                        ? SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: theme['accent'], strokeWidth: 2))
+                        : const Text('REGISTRAR COBRO', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 80), // Espacio para scroll
+        ],
+      ),
+    );
+  }
+
+  void _showAddConceptForCashDialog() {
+    if (_conceptosCatalogo.isEmpty) return;
+    
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        ConceptoCatalogo sel = _conceptosCatalogo.first;
+        int cant = 1;
+        return StatefulBuilder(
+          builder: (context, setSt) {
+            return AlertDialog(
+              title: const Text('Añadir Concepto'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  DropdownButton<ConceptoCatalogo>(
+                    isExpanded: true,
+                    value: sel,
+                    items: _conceptosCatalogo.map((c) => DropdownMenuItem(
+                      value: c, 
+                      child: Text(c.Descripcion, overflow: TextOverflow.ellipsis)
+                    )).toList(),
+                    onChanged: (v) { if (v != null) setSt(() => sel = v); },
+                  ),
+                  const SizedBox(height: 15),
+                  Row(
+                    children: [
+                      const Text('Cantidad:'),
+                      const SizedBox(width: 10),
+                      IconButton(onPressed: () => setSt(() => cant = (cant > 1) ? cant - 1 : 1), icon: const Icon(Icons.remove)),
+                      Text('$cant'),
+                      IconButton(onPressed: () => setSt(() => cant++), icon: const Icon(Icons.add)),
+                    ],
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+                ElevatedButton(
+                  onPressed: () {
+                    setState(() {
+                      _conceptosCobroEfectivo.add(PagoConcepto(
+                        concepto: sel,
+                        cantidad: cant,
+                        precioUnitario: _getCostoUnitario(sel),
+                      ));
+                    });
+                    Navigator.pop(ctx);
+                  },
+                  child: const Text('Añadir'),
+                ),
+              ],
+            );
+          }
+        );
+      }
+    );
+  }
+
+  void _showFullImage(String url) {
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Align(
+              alignment: Alignment.topRight,
+              child: IconButton(icon: const Icon(Icons.close, color: Colors.white), onPressed: () => Navigator.pop(ctx)),
+            ),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: Image.network(_supabase.storage.from('radios_docs').getPublicUrl(url), fit: BoxFit.contain),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -1,12 +1,13 @@
 {
   "user": {
-    "Foto": "https://ptylwwjhvoznaivzfpsa.supabase.co/storage/v1/object/sign/profilePictures/jsanchez.jpg?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9kNTJhZmUwYy0xNGNkLTQ5YjItYWYzMy0yYWU0YjA0NDAyYjAiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm9maWxlUGljdHVyZXMvanNhbmNoZXouanBnIiwiaWF0IjoxNzYzNTY2OTY5LCJleHAiOjE5MjEyNDY5Njl9.s5mcP3LsVXaDT1EbKjwvcoSpCACZgsukMtr9YjKDoaw",
+    "Foto": "https://ptylwwjhvoznaivzfpsa.supabase.co/storage/v1/object/sign/profilePictures/1.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9kNTJhZmUwYy0xNGNkLTQ5YjItYWYzMy0yYWU0YjA0NDAyYjAiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm9maWxlUGljdHVyZXMvMS5wbmciLCJpYXQiOjE3NjcxOTQ5NzIsImV4cCI6MjA4MjU1NDk3Mn0.-YEc3m1BB8KR6DSIgtWOeh9W10hYOTRapNq6HVHkR7g",
     "pagos": [
       {
         "Costo": 180,
         "Fecha": "2025-10-17",
-        "Folio": "0",
+        "Folio": "N/A",
         "idPago": 1,
+        "Estatus": "Pendiente",
         "Importe": 180,
         "Cantidad": 1,
         "iddLogia": 1,
@@ -15,46 +16,386 @@
       },
       {
         "Costo": 350,
-        "Fecha": "2025-10-17",
-        "Folio": "9507352445",
+        "Fecha": "2026-01-07",
+        "Folio": "2",
         "idPago": 2,
+        "Estatus": "Procesado",
         "Importe": 1050,
         "Cantidad": 3,
         "iddLogia": 3,
         "Descripcion": "Pago de cuota mensual",
-        "idFormaPago": 2
+        "idFormaPago": 1
       },
       {
         "Costo": 200,
-        "Fecha": "2025-11-21",
-        "Folio": "0",
+        "Fecha": "2026-01-06",
+        "Folio": "23",
         "idPago": 23,
+        "Estatus": "Procesado",
         "Importe": 200,
         "Cantidad": 1,
         "iddLogia": 1,
         "Descripcion": "Diploma",
-        "idFormaPago": 2
+        "idFormaPago": 1
       },
       {
         "Costo": 200,
-        "Fecha": "2025-11-21",
-        "Folio": "0",
+        "Fecha": "2026-01-06",
+        "Folio": "24",
         "idPago": 24,
+        "Estatus": "Procesado",
         "Importe": 200,
         "Cantidad": 1,
         "iddLogia": 1,
         "Descripcion": "Diploma",
-        "idFormaPago": 2
+        "idFormaPago": 1
       },
       {
         "Costo": 200,
-        "Fecha": "2025-11-21",
-        "Folio": "0",
+        "Fecha": "2026-01-07",
+        "Folio": "25",
         "idPago": 25,
+        "Estatus": "Procesado",
         "Importe": 200,
         "Cantidad": 1,
         "iddLogia": 1,
         "Descripcion": "Diploma",
+        "idFormaPago": 1
+      },
+      {
+        "Costo": 180,
+        "Fecha": "2025-11-21",
+        "Folio": "N/A",
+        "idPago": 26,
+        "Estatus": "Pendiente",
+        "Importe": 360,
+        "Cantidad": 2,
+        "iddLogia": 1,
+        "Descripcion": "Pago de cuota mensual",
+        "idFormaPago": 1
+      },
+      {
+        "Costo": 200,
+        "Fecha": "2026-01-06",
+        "Folio": "27",
+        "idPago": 27,
+        "Estatus": "Procesado",
+        "Importe": 200,
+        "Cantidad": 1,
+        "iddLogia": 1,
+        "Descripcion": "Diploma",
+        "idFormaPago": 1
+      },
+      {
+        "Costo": 200,
+        "Fecha": "2026-01-07",
+        "Folio": "28",
+        "idPago": 28,
+        "Estatus": "Procesado",
+        "Importe": 200,
+        "Cantidad": 1,
+        "iddLogia": 1,
+        "Descripcion": "Diploma",
+        "idFormaPago": 1
+      },
+      {
+        "Costo": 200,
+        "Fecha": "2026-01-06",
+        "Folio": "29",
+        "idPago": 29,
+        "Estatus": "Procesado",
+        "Importe": 200,
+        "Cantidad": 1,
+        "iddLogia": 1,
+        "Descripcion": "Diploma",
+        "idFormaPago": 1
+      },
+      {
+        "Costo": 350,
+        "Fecha": "2026-01-06",
+        "Folio": "34",
+        "idPago": 34,
+        "Estatus": "Procesado",
+        "Importe": 50,
+        "Cantidad": 1,
+        "iddLogia": 3,
+        "Descripcion": "Pago de cuota mensual",
+        "idFormaPago": 1
+      },
+      {
+        "Costo": 180,
+        "Fecha": "2026-01-03",
+        "Folio": "46",
+        "idPago": 46,
+        "Estatus": "Procesado",
+        "Importe": 360,
+        "Cantidad": 2,
+        "iddLogia": 1,
+        "Descripcion": "Pago de cuota mensual",
+        "idFormaPago": 1
+      },
+      {
+        "Costo": 180,
+        "Fecha": "2026-01-06",
+        "Folio": "47",
+        "idPago": 47,
+        "Estatus": "Procesado",
+        "Importe": 540,
+        "Cantidad": 3,
+        "iddLogia": 1,
+        "Descripcion": "Pago de cuota mensual",
+        "idFormaPago": 1
+      },
+      {
+        "Costo": 180,
+        "Fecha": "2026-01-07",
+        "Folio": "48",
+        "idPago": 48,
+        "Estatus": "Procesado",
+        "Importe": 180,
+        "Cantidad": 1,
+        "iddLogia": 1,
+        "Descripcion": "Pago de cuota mensual",
+        "idFormaPago": 1
+      },
+      {
+        "Costo": 180,
+        "Fecha": "2026-01-07",
+        "Folio": "49",
+        "idPago": 49,
+        "Estatus": "Procesado",
+        "Importe": 180,
+        "Cantidad": 1,
+        "iddLogia": 1,
+        "Descripcion": "Pago de cuota mensual",
+        "idFormaPago": 1
+      },
+      {
+        "Costo": 180,
+        "Fecha": "2026-01-07",
+        "Folio": "50",
+        "idPago": 50,
+        "Estatus": "Procesado",
+        "Importe": 180,
+        "Cantidad": 1,
+        "iddLogia": 1,
+        "Descripcion": "Pago de cuota mensual",
+        "idFormaPago": 1
+      },
+      {
+        "Costo": 180,
+        "Fecha": "2026-01-07",
+        "Folio": "51",
+        "idPago": 51,
+        "Estatus": "Procesado",
+        "Importe": 180,
+        "Cantidad": 1,
+        "iddLogia": 1,
+        "Descripcion": "Pago de cuota mensual",
+        "idFormaPago": 1
+      },
+      {
+        "Costo": 180,
+        "Fecha": "2026-01-07",
+        "Folio": "52",
+        "idPago": 52,
+        "Estatus": "Procesado",
+        "Importe": 180,
+        "Cantidad": 1,
+        "iddLogia": 1,
+        "Descripcion": "Pago de cuota mensual",
+        "idFormaPago": 1
+      },
+      {
+        "Costo": 180,
+        "Fecha": "2026-01-07",
+        "Folio": "53",
+        "idPago": 53,
+        "Estatus": "Procesado",
+        "Importe": 180,
+        "Cantidad": 1,
+        "iddLogia": 1,
+        "Descripcion": "Pago de cuota mensual",
+        "idFormaPago": 1
+      },
+      {
+        "Costo": 180,
+        "Fecha": "2026-01-07",
+        "Folio": "54",
+        "idPago": 54,
+        "Estatus": "Procesado",
+        "Importe": 180,
+        "Cantidad": 1,
+        "iddLogia": 1,
+        "Descripcion": "Pago de cuota mensual",
+        "idFormaPago": 1
+      },
+      {
+        "Costo": 180,
+        "Fecha": "2026-01-07",
+        "Folio": "55",
+        "idPago": 55,
+        "Estatus": "Procesado",
+        "Importe": 180,
+        "Cantidad": 1,
+        "iddLogia": 1,
+        "Descripcion": "Pago de cuota mensual",
+        "idFormaPago": 1
+      },
+      {
+        "Costo": 180,
+        "Fecha": "2026-01-07",
+        "Folio": "56",
+        "idPago": 56,
+        "Estatus": "Procesado",
+        "Importe": 180,
+        "Cantidad": 1,
+        "iddLogia": 1,
+        "Descripcion": "Pago de cuota mensual",
+        "idFormaPago": 1
+      },
+      {
+        "Costo": 180,
+        "Fecha": "2026-01-07",
+        "Folio": "57",
+        "idPago": 57,
+        "Estatus": "Procesado",
+        "Importe": 180,
+        "Cantidad": 1,
+        "iddLogia": 1,
+        "Descripcion": "Pago de cuota mensual",
+        "idFormaPago": 1
+      },
+      {
+        "Costo": 180,
+        "Fecha": "2026-01-07",
+        "Folio": "58",
+        "idPago": 58,
+        "Estatus": "Procesado",
+        "Importe": 180,
+        "Cantidad": 1,
+        "iddLogia": 1,
+        "Descripcion": "Pago de cuota mensual",
+        "idFormaPago": 1
+      },
+      {
+        "Costo": 180,
+        "Fecha": "2026-01-07",
+        "Folio": "59",
+        "idPago": 59,
+        "Estatus": "Procesado",
+        "Importe": 180,
+        "Cantidad": 1,
+        "iddLogia": 1,
+        "Descripcion": "Pago de cuota mensual",
+        "idFormaPago": 1
+      },
+      {
+        "Costo": 180,
+        "Fecha": "2026-01-07",
+        "Folio": "60",
+        "idPago": 60,
+        "Estatus": "Procesado",
+        "Importe": 180,
+        "Cantidad": 1,
+        "iddLogia": 1,
+        "Descripcion": "Pago de cuota mensual",
+        "idFormaPago": 1
+      },
+      {
+        "Costo": 180,
+        "Fecha": "2026-01-07",
+        "Folio": "R-300",
+        "idPago": 61,
+        "Estatus": "Pendiente",
+        "Importe": 180,
+        "Cantidad": 1,
+        "iddLogia": 1,
+        "Descripcion": "Pago de cuota mensual",
+        "idFormaPago": 3
+      },
+      {
+        "Costo": 180,
+        "Fecha": "2026-01-07",
+        "Folio": "62",
+        "idPago": 62,
+        "Estatus": "Procesado",
+        "Importe": 180,
+        "Cantidad": 1,
+        "iddLogia": 1,
+        "Descripcion": "Pago de cuota mensual",
+        "idFormaPago": 1
+      },
+      {
+        "Costo": 180,
+        "Fecha": "2026-01-07",
+        "Folio": "63",
+        "idPago": 63,
+        "Estatus": "Procesado",
+        "Importe": 180,
+        "Cantidad": 1,
+        "iddLogia": 1,
+        "Descripcion": "Pago de cuota mensual",
+        "idFormaPago": 1
+      },
+      {
+        "Costo": 180,
+        "Fecha": "2026-01-07",
+        "Folio": "64",
+        "idPago": 64,
+        "Estatus": "Procesado",
+        "Importe": 180,
+        "Cantidad": 1,
+        "iddLogia": 1,
+        "Descripcion": "Pago de cuota mensual",
+        "idFormaPago": 1
+      },
+      {
+        "Costo": 180,
+        "Fecha": "2026-01-07",
+        "Folio": "65",
+        "idPago": 65,
+        "Estatus": "Procesado",
+        "Importe": 180,
+        "Cantidad": 1,
+        "iddLogia": 1,
+        "Descripcion": "Pago de cuota mensual",
+        "idFormaPago": 1
+      },
+      {
+        "Costo": 180,
+        "Fecha": "2026-01-07",
+        "Folio": "66",
+        "idPago": 66,
+        "Estatus": "Procesado",
+        "Importe": 180,
+        "Cantidad": 1,
+        "iddLogia": 1,
+        "Descripcion": "Pago de cuota mensual",
+        "idFormaPago": 1
+      },
+      {
+        "Costo": 180,
+        "Fecha": "2026-01-07",
+        "Folio": "67",
+        "idPago": 67,
+        "Estatus": "Procesado",
+        "Importe": 180,
+        "Cantidad": 1,
+        "iddLogia": 1,
+        "Descripcion": "Pago de cuota mensual",
+        "idFormaPago": 1
+      },
+      {
+        "Costo": 180,
+        "Fecha": "2026-01-07",
+        "Folio": "0",
+        "idPago": 68,
+        "Estatus": "Pendiente",
+        "Importe": 180,
+        "Cantidad": 1,
+        "iddLogia": 1,
+        "Descripcion": "Pago de cuota mensual",
         "idFormaPago": 2
       }
     ],
@@ -62,11 +403,12 @@
     "Usuario": "laportillo",
     "Telefono": "614-510-0650",
     "Direccion": "C.Periodista Ignacio Rodriguez # 96, Col. Revolución, Chihuahua, Chihuahua",
-    "auth_uuid": null,
+    "auth_uuid": "098bd176-da0f-4468-9678-a436582ed235",
     "idUsuario": 1,
     "documentos": [
       {
         "Fecha": "2023-11-11",
+        "idGrado": 1,
         "iddLogia": 1,
         "Descripcion": "Trabajo de albañileria",
         "NombreCorto": "Tema 1",
@@ -74,6 +416,7 @@
       },
       {
         "Fecha": "2025-11-20",
+        "idGrado": 2,
         "iddLogia": 1,
         "Descripcion": "Burilado",
         "NombreCorto": "Tema 1",
@@ -81,21 +424,23 @@
       },
       {
         "Fecha": "2025-11-20",
+        "idGrado": 0,
+        "iddLogia": 1,
+        "Descripcion": "Tema libre",
+        "NombreCorto": "Tema Libre",
+        "NombreLargo": "No somos de aqui"
+      },
+      {
+        "Fecha": "2025-11-20",
+        "idGrado": 3,
         "iddLogia": 1,
         "Descripcion": "Trazado de arquitectura",
         "NombreCorto": "Tema 1",
         "NombreLargo": "Resumen simbólico de los 2 primeros grados, su interpretación"
-      },
-      {
-        "Fecha": "2025-11-20",
-        "iddLogia": 1,
-        "Descripcion": "Tema libre",
-        "NombreCorto": "Tema Libre",
-        "NombreLargo": ""
       }
     ],
-    "Contraseña": "Lapt123456",
-    "FechaNacimiento": "1987-09-17",
+    "Contraseña": "C3rd45-69*69",
+    "FechaNacimiento": "1987-01-01",
     "CorreoElectronico": "laportillo1987@gmail.com",
     "perfiles_opciones": [
       {
@@ -108,35 +453,15 @@
         },
         "idGrado": 3,
         "idLogia": 1,
-        "idPerfil": 1,
-        "permisos": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12,
-          13,
-          14,
-          15,
-          16,
-          17,
-          18,
-          19,
-          20
-        ],
+        "idPerfil": 7,
+        "permisos": [1, 2, 3, 4, 8, 9, 10, 11, 12, 13, 14],
         "Abreviatura": "M∴M∴",
         "GradoNombre": "Maestro",
         "LogiaNombre": "Perseverancia y Lealtad No. 12",
         "Significado": "Venerable Hermano",
         "Tratamiento": "V∴H∴",
-        "PerfilNombre": "Venerable Maestro"
+        "esGranLogia": false,
+        "PerfilNombre": "Tesorero"
       },
       {
         "Grupo": "Logias Capitulares de Perfección",
@@ -149,27 +474,70 @@
         "idGrado": 4,
         "idLogia": 3,
         "idPerfil": 5,
-        "permisos": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          12,
-          17,
-          18,
-          19,
-          20
-        ],
+        "permisos": [1, 2, 3, 4, 5, 6, 7, 8, 12, 17, 18, 19, 20],
         "Abreviatura": "M∴S∴",
         "GradoNombre": "Maestro Secreto",
         "LogiaNombre": "Benito Juarez Garcia No. 221",
         "Significado": "Digno Hermano",
         "Tratamiento": "D∴H∴",
+        "esGranLogia": false,
         "PerfilNombre": "Secretario"
+      },
+      {
+        "Grupo": "Grados Simbólicos",
+        "colores": {
+          "C1": "0047AB",
+          "C2": "000000",
+          "C3": "FFFFFF",
+          "C4": "FFD700"
+        },
+        "idGrado": 3,
+        "idLogia": 5,
+        "idPerfil": 0,
+        "permisos": [
+          1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
+        ],
+        "Abreviatura": "M∴M∴",
+        "GradoNombre": "Maestro",
+        "LogiaNombre": "Gran Logia Cosmos A.C.",
+        "Significado": "Venerable Hermano",
+        "Tratamiento": "V∴H∴",
+        "esGranLogia": true,
+        "PerfilNombre": "Super Usuario"
+      },
+      {
+        "Grupo": "Grados Simbólicos",
+        "colores": {
+          "C1": "0047AB",
+          "C2": "000000",
+          "C3": "FFFFFF",
+          "C4": "FFD700"
+        },
+        "idGrado": 3,
+        "idLogia": 5,
+        "idPerfil": 5,
+        "permisos": [1, 2, 3, 4, 5, 6, 7, 8, 12, 17, 18, 19, 20],
+        "Abreviatura": "M∴M∴",
+        "GradoNombre": "Maestro",
+        "LogiaNombre": "Gran Logia Cosmos A.C.",
+        "Significado": "Venerable Hermano",
+        "Tratamiento": "V∴H∴",
+        "esGranLogia": true,
+        "PerfilNombre": "Secretario"
+      },
+      {
+        "Grupo": "Administración",
+        "colores": { "C1": "", "C2": "", "C3": "", "C4": "" },
+        "idGrado": 0,
+        "idLogia": 5,
+        "idPerfil": 0,
+        "permisos": [],
+        "Abreviatura": "SU",
+        "GradoNombre": "Superusuario",
+        "LogiaNombre": "Gran Logia Cosmos A.C.",
+        "Significado": "Superusuario",
+        "Tratamiento": "SU",
+        "PerfilNombre": "Superusuario"
       }
     ],
     "contactosEmergencia": [
@@ -226,33 +594,128 @@
     ]
   },
   "status": "success",
-  "message": "Contexto de logia, perfil, documentos, pagos y catálogos cargado exitosamente",
+  "message": "Contexto cargado",
   "catalogos": {
     "parentezcos": [
+      { "Descripcion": "Esposa/Esposo", "idParentezco": 1 },
+      { "Descripcion": "Madre/Padre", "idParentezco": 2 },
+      { "Descripcion": "Hijo/Hija", "idParentezco": 3 },
+      { "Descripcion": "Amiga/Amigo", "idParentezco": 4 },
+      { "Descripcion": "Hermano/Hermana", "idParentezco": 5 },
+      { "Descripcion": "Tio/Tia", "idParentezco": 6 }
+    ],
+    "grados_catalogo": {
+      "Grados Simbólicos": [
+        { "idGrado": 1, "Descripcion": "Aprendiz" },
+        { "idGrado": 2, "Descripcion": "Compañero" },
+        { "idGrado": 3, "Descripcion": "Maestro" }
+      ],
+      "Consistorios y Supremo Consejo": [
+        {
+          "idGrado": 31,
+          "Descripcion": "Gran Inspector Inquisidor Comendador"
+        },
+        { "idGrado": 32, "Descripcion": "Sublime Príncipe del Real Secreto" },
+        { "idGrado": 33, "Descripcion": "Soberano Gran Inspector General" }
+      ],
+      "Areópagos de Caballeros Kadosh": [
+        {
+          "idGrado": 19,
+          "Descripcion": "Gran Pontífice o Sublime Escocés de la Jerusalén Celeste"
+        },
+        {
+          "idGrado": 20,
+          "Descripcion": "Tribuno u Orador o Maestro de Todas las Logias"
+        },
+        {
+          "idGrado": 21,
+          "Descripcion": "Patriarca Noaquita o Caballero Prusiano"
+        },
+        {
+          "idGrado": 22,
+          "Descripcion": "Príncipe del Líbano o Caballero de la Real Hacha"
+        },
+        { "idGrado": 23, "Descripcion": "Levita o Jefe del Tabernáculo" },
+        {
+          "idGrado": 24,
+          "Descripcion": "Sacerdote o Príncipe del Nuevo Tabernáculo"
+        },
+        {
+          "idGrado": 25,
+          "Descripcion": "Caballero de la Serpiente de Bronce o Mago Soberano"
+        },
+        {
+          "idGrado": 26,
+          "Descripcion": "Príncipe de Merced o Escocés Trinitario o Sacerdote de la Verdad"
+        },
+        { "idGrado": 27, "Descripcion": "Gran Comendador del Templo" },
+        { "idGrado": 28, "Descripcion": "Príncipe Adepto o Caballero del Sol" },
+        {
+          "idGrado": 29,
+          "Descripcion": "Gran Escocés de San Andrés o Gran Maestro de la Luz"
+        },
+        {
+          "idGrado": 30,
+          "Descripcion": "Caballero Kadosh o del Águila Blanca y Negra"
+        }
+      ],
+      "Capítulos de Caballeros Rosacruz": [
+        { "idGrado": 15, "Descripcion": "Caballero de Oriente o de la Espada" },
+        { "idGrado": 16, "Descripcion": "Príncipe de Jerusalén" },
+        { "idGrado": 17, "Descripcion": "Caballero de Oriente y Occidente" },
+        { "idGrado": 18, "Descripcion": "Soberano Príncipe Rosacruz" }
+      ],
+      "Logias Capitulares de Perfección": [
+        { "idGrado": 4, "Descripcion": "Maestro Secreto" },
+        { "idGrado": 5, "Descripcion": "Maestro Perfecto" },
+        { "idGrado": 6, "Descripcion": "Secretario Íntimo" },
+        { "idGrado": 7, "Descripcion": "Preboste y Juez" },
+        { "idGrado": 8, "Descripcion": "Intendente de los Edificios" },
+        { "idGrado": 9, "Descripcion": "Maestro Elegido de los Nueve" },
+        { "idGrado": 10, "Descripcion": "Maestro Elegido de los Quince" },
+        { "idGrado": 11, "Descripcion": "Sublime Caballero Elegido" },
+        { "idGrado": 12, "Descripcion": "Gran Maestro Arquitecto" },
+        { "idGrado": 13, "Descripcion": "Caballero del Real Arco" },
+        { "idGrado": 14, "Descripcion": "Gran Elegido Perfecto y Sublime" }
+      ]
+    },
+    "logias_catalogo": [
       {
-        "Descripcion": "Esposa/Esposo",
-        "idParentezco": 1
+        "iddLogia": 1,
+        "Descripcion": "Perseverancia y Lealtad No. 12",
+        "esGranLogia": false,
+        "idGranLogia": 1
       },
       {
-        "Descripcion": "Madre/Padre",
-        "idParentezco": 2
+        "iddLogia": 3,
+        "Descripcion": "Benito Juarez Garcia No. 221",
+        "esGranLogia": false,
+        "idGranLogia": 3
       },
       {
-        "Descripcion": "Hijo/Hija",
-        "idParentezco": 3
-      },
-      {
-        "Descripcion": "Amiga/Amigo",
-        "idParentezco": 4
-      },
-      {
-        "Descripcion": "Hermano/Hermana",
-        "idParentezco": 5
-      },
-      {
-        "Descripcion": "Tio/Tia",
-        "idParentezco": 6
+        "iddLogia": 5,
+        "Descripcion": "Gran Logia Cosmos A.C.",
+        "esGranLogia": true,
+        "idGranLogia": 1
       }
+    ],
+    "perfiles_catalogo": [
+      { "Nombre": "Venerable Maestro", "idPerfil": 1 },
+      { "Nombre": "Primer Vigilante", "idPerfil": 2 },
+      { "Nombre": "Segundo Vigilante", "idPerfil": 3 },
+      { "Nombre": "Orador", "idPerfil": 4 },
+      { "Nombre": "Secretario", "idPerfil": 5 },
+      { "Nombre": "Maestro de ceremonias", "idPerfil": 6 },
+      { "Nombre": "Tesorero", "idPerfil": 7 },
+      { "Nombre": "Primer Experto", "idPerfil": 8 },
+      { "Nombre": "Segundo Experto", "idPerfil": 9 },
+      { "Nombre": "Hospitalario", "idPerfil": 10 },
+      { "Nombre": "Porta enstandartes", "idPerfil": 11 },
+      { "Nombre": "Primer diacono", "idPerfil": 12 },
+      { "Nombre": "Segundo diacono", "idPerfil": 13 },
+      { "Nombre": "Guarda templo interior", "idPerfil": 14 },
+      { "Nombre": "Guarda templo exterior", "idPerfil": 15 },
+      { "Nombre": "Usuario", "idPerfil": 16 }
     ],
     "conceptos_catalogo": [
       {
@@ -376,6 +839,27 @@
             "ctaBanco": "638180000116999371",
             "iddLogia": 3,
             "iddConcepto": 16
+          },
+          {
+            "Costo": 50,
+            "idGrado": 19,
+            "ctaBanco": "123456789987654\n",
+            "iddLogia": 5,
+            "iddConcepto": 28
+          },
+          {
+            "Costo": 50,
+            "idGrado": 19,
+            "ctaBanco": "123456789987654\n",
+            "iddLogia": 5,
+            "iddConcepto": 28
+          },
+          {
+            "Costo": 50,
+            "idGrado": 19,
+            "ctaBanco": "123456789987654\n",
+            "iddLogia": 5,
+            "iddConcepto": 28
           }
         ],
         "idConcepto": 2,
@@ -826,42 +1310,6 @@
         "Registro": true,
         "detalles": [
           {
-            "Grado": 2,
-            "idConcepto": 0,
-            "NombreCorto": "Tema 1",
-            "NombreLargo": "Resumen simbólico de los 2 primeros grados, su interpretación"
-          },
-          {
-            "Grado": 2,
-            "idConcepto": 0,
-            "NombreCorto": "Tema 2",
-            "NombreLargo": "La palabra de pase, su origen y su interpretación"
-          },
-          {
-            "Grado": 2,
-            "idConcepto": 0,
-            "NombreCorto": "Tema 3",
-            "NombreLargo": "La Palabra Sagrada, su origen e interpretación"
-          },
-          {
-            "Grado": 2,
-            "idConcepto": 0,
-            "NombreCorto": "Tema 4",
-            "NombreLargo": "La Acacia, su origen, su historia y su interpretación"
-          },
-          {
-            "Grado": 2,
-            "idConcepto": 0,
-            "NombreCorto": "Tema 5",
-            "NombreLargo": "Las ciencias del Grado de Maestro"
-          },
-          {
-            "Grado": 2,
-            "idConcepto": 0,
-            "NombreCorto": "Tema 6",
-            "NombreLargo": "Resumen Filosófico del Grado"
-          },
-          {
             "Grado": 3,
             "idConcepto": 0,
             "NombreCorto": "Tema 7",
@@ -906,6 +1354,30 @@
           {
             "Grado": 3,
             "idConcepto": 0,
+            "NombreCorto": "Tema 2",
+            "NombreLargo": "La palabra de pase, su origen y su interpretación"
+          },
+          {
+            "Grado": 3,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 4",
+            "NombreLargo": "La Acacia, su origen, su historia y su interpretación"
+          },
+          {
+            "Grado": 3,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 5",
+            "NombreLargo": "Las ciencias del Grado de Maestro"
+          },
+          {
+            "Grado": 3,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 6",
+            "NombreLargo": "Resumen Filosófico del Grado"
+          },
+          {
+            "Grado": 3,
+            "idConcepto": 0,
             "NombreCorto": "Tema 14",
             "NombreLargo": "Síntesis de la Leyenda del Tercer Grado"
           },
@@ -932,12 +1404,6 @@
             "idConcepto": 0,
             "NombreCorto": "Tema 18",
             "NombreLargo": "Lugar en donde debe encontrarse a un Maestro perdido y porqué"
-          },
-          {
-            "Grado": 3,
-            "idConcepto": 0,
-            "NombreCorto": "Tema 19",
-            "NombreLargo": "Interpretación astronómica de la leyenda del grado"
           },
           {
             "Grado": 3,
@@ -986,6 +1452,24 @@
             "idConcepto": 0,
             "NombreCorto": "Tema 27",
             "NombreLargo": "Interpretación y origen del signo de la garra"
+          },
+          {
+            "Grado": 3,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 1",
+            "NombreLargo": "Resumen simbólico de los 2 primeros grados, su interpretación"
+          },
+          {
+            "Grado": 3,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 3",
+            "NombreLargo": "La Palabra Sagrada, su origen e interpretación"
+          },
+          {
+            "Grado": 3,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 19",
+            "NombreLargo": "Interpretación astronómica de la leyenda del grado"
           }
         ],
         "Solicitud": false,
@@ -1069,6 +1553,18 @@
             "idConcepto": 7,
             "NombreCorto": "Diploma de aprendiz",
             "NombreLargo": "Diploma del primer grado "
+          },
+          {
+            "Grado": 2,
+            "idConcepto": 7,
+            "NombreCorto": "Diploma compañero",
+            "NombreLargo": "Diploma del segundo grado"
+          },
+          {
+            "Grado": 3,
+            "idConcepto": 7,
+            "NombreCorto": "Diploma de maestro",
+            "NombreLargo": "Diploma del tercer grado"
           }
         ],
         "Solicitud": true,
@@ -1078,120 +1574,297 @@
         "RequierePago": true,
         "RequiereGrado": true,
         "RequiereDescripcion": false
+      },
+      {
+        "Registro": false,
+        "detalles": [
+          {
+            "Grado": 3,
+            "idConcepto": 0,
+            "NombreCorto": "Carta de quite",
+            "NombreLargo": "Carta otorgada a los maestros masones"
+          },
+          {
+            "Grado": 0,
+            "idConcepto": 0,
+            "NombreCorto": "Carta de viaje",
+            "NombreLargo": "Carta entregada a todo masón que lo requiera para comprobar su pertenencia a una Logia"
+          }
+        ],
+        "Solicitud": true,
+        "Descripcion": "Carta",
+        "Elavoracion": true,
+        "idDocumento": 9,
+        "RequierePago": false,
+        "RequiereGrado": true,
+        "RequiereDescripcion": false
       }
     ],
     "listaLogiasPorUsuario": [
       {
         "Nombre": "Luis Alfonso Portillo Torres",
+        "perfiles": [
+          {
+            "idGrado": 3,
+            "idLogia": 1,
+            "idPerfil": 7,
+            "Tratamiento": "V∴H∴",
+            "PerfilNombre": "Tesorero"
+          },
+          {
+            "idGrado": 4,
+            "idLogia": 3,
+            "idPerfil": 5,
+            "Tratamiento": "D∴H∴",
+            "PerfilNombre": "Secretario"
+          },
+          {
+            "idGrado": 3,
+            "idLogia": 5,
+            "idPerfil": 5,
+            "Tratamiento": "V∴H∴",
+            "PerfilNombre": "Secretario"
+          },
+          {
+            "idGrado": 3,
+            "idLogia": 5,
+            "idPerfil": 0,
+            "Tratamiento": "V∴H∴",
+            "PerfilNombre": "Super Usuario"
+          },
+          {
+            "idGrado": 3,
+            "idLogia": 5,
+            "idPerfil": 5,
+            "Tratamiento": "V∴H∴",
+            "PerfilNombre": "Secretario"
+          },
+          {
+            "idGrado": 3,
+            "idLogia": 5,
+            "idPerfil": 0,
+            "Tratamiento": "V∴H∴",
+            "PerfilNombre": "Super Usuario"
+          },
+          {
+            "idGrado": 3,
+            "idLogia": 5,
+            "idPerfil": 5,
+            "Tratamiento": "V∴H∴",
+            "PerfilNombre": "Secretario"
+          },
+          {
+            "idGrado": 3,
+            "idLogia": 5,
+            "idPerfil": 0,
+            "Tratamiento": "V∴H∴",
+            "PerfilNombre": "Super Usuario"
+          }
+        ],
         "idUsuario": 1,
-        "listaIddLogia": [
-          1,
-          3
-        ]
+        "FechaNacimiento": "1987-01-01"
       },
       {
         "Nombre": "Arturo Leon Portillo",
+        "perfiles": [
+          {
+            "idGrado": 1,
+            "idLogia": 1,
+            "idPerfil": 6,
+            "Tratamiento": "Q∴H∴",
+            "PerfilNombre": "Maestro de ceremonias"
+          }
+        ],
         "idUsuario": 2,
-        "listaIddLogia": [
-          1
-        ]
+        "FechaNacimiento": "1970-01-10"
       },
       {
         "Nombre": "Juan Antonio Martinez Robles",
+        "perfiles": [
+          {
+            "idGrado": 2,
+            "idLogia": 1,
+            "idPerfil": 13,
+            "Tratamiento": "Q∴H∴",
+            "PerfilNombre": "Segundo diacono"
+          }
+        ],
         "idUsuario": 3,
-        "listaIddLogia": [
-          1
-        ]
+        "FechaNacimiento": "1970-12-14"
       },
       {
         "Nombre": "Juan Carlos Erives Fuentes",
+        "perfiles": [
+          {
+            "idGrado": 3,
+            "idLogia": 1,
+            "idPerfil": 4,
+            "Tratamiento": "V∴H∴",
+            "PerfilNombre": "Orador"
+          },
+          {
+            "idGrado": 5,
+            "idLogia": 3,
+            "idPerfil": 2,
+            "Tratamiento": "D∴H∴",
+            "PerfilNombre": "Primer Vigilante"
+          }
+        ],
         "idUsuario": 4,
-        "listaIddLogia": [
-          1,
-          3
-        ]
+        "FechaNacimiento": "1970-12-15"
       },
       {
         "Nombre": "Jahaziel Guillen Sanchez Martinez",
+        "perfiles": [
+          {
+            "idGrado": 3,
+            "idLogia": 1,
+            "idPerfil": 16,
+            "Tratamiento": "V∴H∴",
+            "PerfilNombre": "Usuario"
+          },
+          {
+            "idGrado": 6,
+            "idLogia": 3,
+            "idPerfil": 7,
+            "Tratamiento": "D∴H∴",
+            "PerfilNombre": "Tesorero"
+          }
+        ],
         "idUsuario": 5,
-        "listaIddLogia": [
-          1,
-          3
-        ]
+        "FechaNacimiento": "1970-12-16"
       },
       {
         "Nombre": "Xamir Jaydar Soto",
+        "perfiles": [],
         "idUsuario": 6,
-        "listaIddLogia": []
+        "FechaNacimiento": "1970-12-17"
       },
       {
         "Nombre": "Manuel Blanco Erives",
+        "perfiles": [],
         "idUsuario": 7,
-        "listaIddLogia": []
+        "FechaNacimiento": "1970-10-15"
       },
       {
         "Nombre": "Bogar Isaac Gonzalez Esparza",
+        "perfiles": [],
         "idUsuario": 8,
-        "listaIddLogia": []
+        "FechaNacimiento": "1970-10-16"
       },
       {
         "Nombre": "Librado Gilberto Martinez Bibiano",
+        "perfiles": [],
         "idUsuario": 9,
-        "listaIddLogia": []
+        "FechaNacimiento": "1970-10-17"
       },
       {
         "Nombre": "Fermin Gomez Ochoa",
+        "perfiles": [],
         "idUsuario": 10,
-        "listaIddLogia": []
+        "FechaNacimiento": "1970-10-18"
       },
       {
         "Nombre": "Oscar Mauricio Jaquez Nieto",
+        "perfiles": [],
         "idUsuario": 11,
-        "listaIddLogia": []
+        "FechaNacimiento": "1970-10-19"
       },
       {
         "Nombre": "Javier Medina Gonzalez ",
+        "perfiles": [],
         "idUsuario": 12,
-        "listaIddLogia": []
+        "FechaNacimiento": "1970-10-20"
       },
       {
         "Nombre": "Jesus Alberto Menchaca Fuentes",
+        "perfiles": [],
         "idUsuario": 13,
-        "listaIddLogia": []
+        "FechaNacimiento": "1970-10-21"
       },
       {
         "Nombre": "David Mireles Valadez",
+        "perfiles": [],
         "idUsuario": 14,
-        "listaIddLogia": []
+        "FechaNacimiento": "1970-10-22"
       },
       {
         "Nombre": "Jorge Alberto Chavez de la Riva",
+        "perfiles": [],
         "idUsuario": 15,
-        "listaIddLogia": []
+        "FechaNacimiento": "1970-10-23"
       },
       {
         "Nombre": "Jorge Arturo Lara Perez",
+        "perfiles": [],
         "idUsuario": 16,
-        "listaIddLogia": []
+        "FechaNacimiento": "1970-10-24"
       },
       {
         "Nombre": "Felipe de Jesus Medina Granados",
+        "perfiles": [],
         "idUsuario": 17,
-        "listaIddLogia": []
+        "FechaNacimiento": "1970-10-25"
       },
       {
         "Nombre": "Julio Cesar Martinez Molina",
+        "perfiles": [],
         "idUsuario": 18,
-        "listaIddLogia": []
+        "FechaNacimiento": "1970-10-26"
       },
       {
         "Nombre": "Mauricio Quintero Robles",
+        "perfiles": [
+          {
+            "idGrado": 3,
+            "idLogia": 1,
+            "idPerfil": 16,
+            "Tratamiento": "V∴H∴",
+            "PerfilNombre": "Usuario"
+          },
+          {
+            "idGrado": 14,
+            "idLogia": 3,
+            "idPerfil": 16,
+            "Tratamiento": "S∴H∴",
+            "PerfilNombre": "Usuario"
+          }
+        ],
         "idUsuario": 19,
-        "listaIddLogia": [
-          1,
-          3,
-          4
-        ]
+        "FechaNacimiento": "1970-01-01"
+      },
+      {
+        "Nombre": "Usuario de prueba",
+        "perfiles": [
+          {
+            "idGrado": 3,
+            "idLogia": 1,
+            "idPerfil": 16,
+            "Tratamiento": "V∴H∴",
+            "PerfilNombre": "Usuario"
+          },
+          {
+            "idGrado": 14,
+            "idLogia": 3,
+            "idPerfil": 16,
+            "Tratamiento": "S∴H∴",
+            "PerfilNombre": "Usuario"
+          }
+        ],
+        "idUsuario": 20,
+        "FechaNacimiento": "1970-12-19"
+      },
+      {
+        "Nombre": "ejemplo de registro",
+        "perfiles": [],
+        "idUsuario": 21,
+        "FechaNacimiento": "2000-12-20"
+      },
+      {
+        "Nombre": "Usuario de ejemplo",
+        "perfiles": [],
+        "idUsuario": 23,
+        "FechaNacimiento": "1900-01-01"
       }
     ]
   }

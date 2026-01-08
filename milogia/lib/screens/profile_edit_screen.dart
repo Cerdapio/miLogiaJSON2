@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-// Asegúrate de que las rutas sean correctas
-import '../config/auth_config.dart'; // Si contiene helpers de color
-import '../models/user_model.dart'; 
+import '../config/auth_config.dart'; 
+import '../models/user_model.dart';
+import '../utils/dropdown_utils.dart'; 
 import 'app_drawer.dart'; 
 
 class ProfileEditScreen extends StatefulWidget {
@@ -18,26 +18,28 @@ class ProfileEditScreen extends StatefulWidget {
 
 class _ProfileEditScreenState extends State<ProfileEditScreen> {
   final _supabase = Supabase.instance.client;
-  final _formKey = GlobalKey<FormState>(); // Key para validar el formulario personal
+  final _formKey = GlobalKey<FormState>(); 
   bool _isLoading = false;
 
-  // Controllers para datos personales
   late TextEditingController _phoneController;
   late TextEditingController _dobController;
   late TextEditingController _addressController;
   late TextEditingController _emailController;
 
-  // Controllers y Key para el Diálogo de Contraseña
   final _passwordFormKey = GlobalKey<FormState>();
   final _currentPasswordController = TextEditingController();
   final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-
-
-  // Lógica de Administración
-  late bool _canAdmin;
   
-  // Variables y controllers para administración (idPerfil == 1)
+  final _newUserFormKey = GlobalKey<FormState>(); 
+  final _newUserNameController = TextEditingController(); 
+  final _newUserEmailController = TextEditingController();
+  final _newUserPasswordController = TextEditingController(); 
+  int? _newUserGradoId;
+  int? _newUserPerfilId;
+
+  late bool _canAdmin;
+
   late Future<List<Map<String, dynamic>>> _usersFuture;
   int? _selectedUserToEdit;
   int? _selectedNewProfileId;
@@ -71,10 +73,12 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     _newPasswordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
+    _newUserNameController.dispose();
+    _newUserEmailController.dispose();
+    _newUserPasswordController.dispose();
   }
 
 
-  // --- LÓGICA DE COLORES ---
   Map<String, Color> _getThemeColors() {
     final colores = widget.selectedProfile?.colores;
     
@@ -102,7 +106,6 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     }
   }
 
-  // --- LÓGICA DE DATOS PERSONALES (UPDATE en catcUsuario) ---
   Future<void> _updatePersonalInfo() async {
   if (!_formKey.currentState!.validate()) return;
   
@@ -116,30 +119,17 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
       'CorreoElectronico': _emailController.text.trim(),
     };
     
-    // 1. Ejecutar la actualización y solicitar los datos actualizados con .select()
     final updatedUsers = await _supabase
         .from('catcUsuarios')
         .update(dataToUpdate)
         .eq('idUsuario', widget.root.user.idUsuario)
-        .select(); // 👈 IMPORTANTE: Pide que se devuelva la fila actualizada
+        .select(); 
         
-    // 2. Verificar que se haya devuelto al menos una fila
     if (updatedUsers.isNotEmpty) {
         final Map<String, dynamic> updatedData = updatedUsers.first;
         
-        // 3. Sincronizar el modelo local (Asumiendo que puedes rellenar tu User model con Map)
-        // ESTO ES PSEUDOCÓDIGO, adapta la forma en que rellenas tu modelo:
         widget.root.user.updateFromJson(updatedData);
-        
-        // O si tu modelo es inmutable y necesitas reemplazarlo:
-         //widget.root.user = CatcUser.fromJson(updatedData); 
-        
-        // *******************************************************************
-        // Si estás usando un State Management (Provider, Riverpod, BLoC, etc.) 
-        // probablemente debas llamar a un método del provider/bloc aquí para notificar 
-        // el cambio de estado con el nuevo objeto 'updatedData'.
-        // *******************************************************************
-    }
+      }
 
     _showSuccessDialog("Actualización Exitosa", "Tus datos personales han sido actualizados.");
 
@@ -152,15 +142,12 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     if (mounted) setState(() => _isLoading = false);
   }
 }
-  // --- LÓGICA DE CAMBIO DE CONTRASEÑA ---
 
   Future<void> _showChangePasswordDialog(Map<String, Color> theme) async {
-    // Reset controllers before showing the dialog
     _currentPasswordController.clear();
     _newPasswordController.clear();
     _confirmPasswordController.clear();
 
-    // Contraseña almacenada en el modelo (se utiliza para validación)
     final String storedPassword = widget.root.user.Contrasena; 
     
     return showDialog<void>(
@@ -179,9 +166,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
-                      // Contraseña Anterior
                       _buildTextField(_currentPasswordController, 'Contraseña Anterior', theme, isPassword: true),
-                      // Nueva Contraseña
                       _buildTextField(_newPasswordController, 'Nueva Contraseña', theme, isPassword: true, 
                         validator: (value) {
                           if (value == null || value.length < 6) {
@@ -190,7 +175,6 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                           return null;
                         }
                       ),
-                      // Confirmar Contraseña
                       TextFormField(
                         controller: _confirmPasswordController,
                         obscureText: true,
@@ -231,50 +215,29 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
               onPressed: _isLoading ? null : () async {
                 if (_passwordFormKey.currentState!.validate()) {
                   setState(() => _isLoading = true);
-                  
-                  // 1. Validar Contraseña Anterior (case sensitive, del user_model)
                   if (storedPassword != _currentPasswordController.text) {
                     setState(() => _isLoading = false);
                     _showErrorDialog("Error de Contraseña", "La contraseña anterior es incorrecta. Por favor, verifica.");
                     return;
                   }
                   
-                  // 2. Ejecutar cambio de contraseña
                   try {
                     final newPassword = _newPasswordController.text;
-                    
-                    // A. Supabase Auth Update (Crucial para el login)
-                    //await _supabase.auth.updateUser(UserAttributes(
-                    //  password: newPassword,
-                    //));
-                    
-                    // B. Actualización en la tabla catcUsuario
-                    // Esto se hace para actualizar el campo Contrasena en tu tabla,
-                    // asumiendo que es donde se almacena el hash/plain-text para la validación anterior.
-                    await _supabase
+await _supabase
                         .from('catcUsuarios')
                         .update({'Contraseña': newPassword})
                         .eq('idUsuario', widget.root.user.idUsuario);
                     
-                    // 3. Cerrar sesión y navegar a login
-                    //await _supabase.auth.signOut();
-
                     if (mounted) {
-                      Navigator.of(context).pop(); // Cierra el diálogo
-                      // Navega a la pantalla de Login y elimina todas las rutas anteriores
-                      // Asume que la ruta '/' te lleva a la pantalla de Login.
+                      Navigator.of(context).pop(); 
                       Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
                     }
 
                   } on AuthApiException catch (e) {
-                      // 🚨 MANEJO ESPECÍFICO DEL ERROR DE MISMA CONTRASEÑA 🚨R
                       if (e.code == 'same_password') {
-                          // La contraseña es la misma. Puedes mostrar un mensaje de éxito/informativo
-                          // o simplemente ignorar el error si para ti no es un fallo crítico.
                           print("La contraseña es la misma, la actualización en la tabla fue redundante pero no falló.");
                           _showSuccessDialog("Actualización", "La contraseña en su tabla ya estaba actualizada.");
                       } else {
-                          // Manejar otros errores de autenticación (ej: token expirado, etc.)
                           _showErrorDialog("Error de Autenticación", e.message);
                       }
                   } on PostgrestException catch (e) {
@@ -294,25 +257,21 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     );
   }
 
-  // --- LÓGICA DE ADMINISTRACIÓN (Mantenida) ---
 
   Future<List<Map<String, dynamic>>> _fetchLogiaMembers() async {
-    // ... (El código de administración se mantiene igual)
-    try {
-      final response = await _supabase
-          .from('catcUsuarios')
-          .select('idUsuario, Nombre')
-          .order('Nombre', ascending: true);
-
-      return (response as List).map((item) => item as Map<String, dynamic>).toList();
-    } catch (e) {
-      debugPrint('Error fetching users for admin: $e');
-      return [];
-    }
+    final adminLogiaId = widget.selectedProfile?.idLogia;
+    if (adminLogiaId == null) return [];
+    final allUsersInCatalog = widget.root.catalogos.listaLogiasPorUsuario;
+    final membersOfLodge = allUsersInCatalog.where((user) {
+      return user.perfiles.any((perfil) => perfil.idLogia == adminLogiaId);
+    }).toList();
+    return membersOfLodge.map((user) => {
+      'idUsuario': user.idUsuario,
+      'Nombre': user.Nombre,
+    }).toList();
   }
 
   Future<void> _callAdminSp() async {
-    // ... (El código de administración se mantiene igual)
      if (_selectedUserToEdit == null || _selectedNewProfileId == null || _selectedNewLogiaId == null || _selectedNewGrado == null) {
       _showErrorDialog("Datos Incompletos", "Debe seleccionar un Usuario, Perfil, Logia y Grado.");
       return;
@@ -322,13 +281,21 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
 
     try {
       await _supabase.rpc(
-        'sp_catcusuarios',
+        rpcFunction,
         params: {
-          'p_opcion': 8, 
-          'p_idusuario': _selectedUserToEdit,
-          'p_idperfil': _selectedNewProfileId,
-          'p_iddlogia': _selectedNewLogiaId,
-          'p_idgrado': _selectedNewGrado,
+          'popcion': 8, 
+          'pidusuario': _selectedUserToEdit,
+          'piddlogia': _selectedNewLogiaId,
+          'pnombre': '',
+          'pusuario': '', 
+          'pcontrasena': '',
+          'ptelefono': '',
+          'pfechanacimiento': '',
+          'pdireccion': '',
+          'pcorreoelectronico': '',
+          'pfoto': '',
+          'pidgrado': _selectedNewGrado,
+          'pidperfil': _selectedNewProfileId
         },
       );
 
@@ -344,10 +311,142 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     }
   }
 
+  Future<void> _showAddUserDialog(Map<String, Color> theme) async {
+    _newUserFormKey.currentState?.reset();
+    _newUserNameController.clear();
+    _newUserEmailController.clear();
+    _newUserPasswordController.clear();
+    _newUserGradoId = null;
+    _newUserPerfilId = null;
 
-  // --- WIDGETS DE UI ---
+    final List<PerfilCatalogo> perfilesCatalogo = widget.root.catalogos.perfiles_catalogo;
+    
+    final String adminGrupo = widget.selectedProfile?.Grupo ?? '';
+    final List<GradoCatalogo> gradosDisponibles = widget.root.catalogos.grados_catalogo[adminGrupo] ?? [];
 
-  // Se añade un validador opcional al TextField para la nueva contraseña
+
+    return showDialog<void>(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder( 
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              backgroundColor: theme['card'],
+              title: Text('Registrar Nuevo Miembro', style: TextStyle(color: theme['text'])),
+              content: Form(
+                key: _newUserFormKey,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      _buildTextField(_newUserNameController, 'Nombre Completo', theme, validator: (v) => v!.isEmpty ? 'Requerido' : null),
+                      _buildTextField(_newUserEmailController, 'Correo Electrónico', theme, keyboardType: TextInputType.emailAddress, validator: (v) => (v == null || !v.contains('@')) ? 'Correo inválido' : null),
+                      _buildTextField(_newUserPasswordController, 'Contraseña', theme, isPassword: true, validator: (v) => (v == null || v.length < 6) ? 'Mínimo 6 caracteres' : null),
+                      const SizedBox(height: 16),
+                      DropdownButtonFormField<int>(
+                        isExpanded: true, 
+                        decoration: InputDecoration(labelText: 'Perfil', labelStyle: TextStyle(color: theme['text']?.withOpacity(0.7))),
+                        value: ensureValidDropdownValue(_newUserPerfilId, perfilesCatalogo.map((p) => p.idPerfil).toList()),
+                        dropdownColor: theme['card'],
+                        items: perfilesCatalogo.map((p) => DropdownMenuItem<int>(
+                          value: p.idPerfil,
+                          child: Text(p.Nombre, style: TextStyle(color: theme['text']), overflow: TextOverflow.ellipsis),
+                        )).toList(),
+                        onChanged: (val) => setStateDialog(() => _newUserPerfilId = val),
+                        validator: (v) => v == null ? 'Selecciona un perfil' : null,
+                      ),
+                      const SizedBox(height: 16),
+                      DropdownButtonFormField<int>(
+                        isExpanded: true, 
+                        decoration: InputDecoration(labelText: 'Grado', labelStyle: TextStyle(color: theme['text']?.withOpacity(0.7))),
+                        value: ensureValidDropdownValue(_newUserGradoId, gradosDisponibles.map((g) => g.idGrado).toList()),
+                        dropdownColor: theme['card'],
+                        items: gradosDisponibles.map((g) => DropdownMenuItem<int>(
+                          value: g.idGrado,
+                          child: Text(g.Descripcion, style: TextStyle(color: theme['text']), overflow: TextOverflow.ellipsis),
+                        )).toList(),
+                        onChanged: (val) => setStateDialog(() => _newUserGradoId = val),
+                        validator: (v) => v == null ? 'Selecciona un grado' : null,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: <Widget>[
+                TextButton(
+                  child: Text('Cancelar', style: TextStyle(color: theme['text']?.withOpacity(0.7))),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: theme['accent']),
+                  child: _isLoading ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Text('Registrar', style: TextStyle(color: Colors.white)),
+                  onPressed: _isLoading ? null : () async {
+                    if (_newUserFormKey.currentState!.validate()) {
+                      setState(() => _isLoading = true);
+                      try {
+                        final authResponse = await _supabase.auth.signUp(
+                          email: _newUserEmailController.text.trim(),
+                          password: _newUserPasswordController.text,
+                        );
+                        if (authResponse.user == null) throw Exception("No se pudo crear el usuario en el sistema de autenticación.");
+                        final authUuid = authResponse.user!.id;
+
+                        final newUserResponse = await _supabase
+                            .from('catcUsuarios')
+                            .insert({
+                              'Nombre': _newUserNameController.text.trim(),
+                              'Usuario': _newUserEmailController.text.split('@').first,
+                              'Contraseña': _newUserPasswordController.text, 
+                              'CorreoElectronico': _newUserEmailController.text.trim(),
+                              'auth_uuid': authUuid,
+                            })
+                            .select('idUsuario, Nombre')
+                            .single();
+                        final newUserId = newUserResponse['idUsuario'] as int;
+
+                        final adminLogiaId = widget.selectedProfile!.idLogia;
+                        await _supabase.from('catdUsuario').insert({
+                          'idUsuario': newUserId,
+                          'idPerfil': _newUserPerfilId,
+                          'Fecha': DateTime.now().toIso8601String(),
+                          'iddLogia': adminLogiaId,
+                          'Activo': true,
+                        });
+
+                        await _supabase.from('catdUsuarioGrado').insert({
+                          'idUsuario': newUserId,
+                          'idGrado': _newUserGradoId,
+                          'Fecha': DateTime.now().toIso8601String(),
+                          'iddLogia': adminLogiaId,
+                          'Activo': true,
+                        });
+
+                        if (mounted) {
+                          Navigator.of(context).pop();
+                          _showSuccessDialog('Miembro Creado', 'El miembro "${newUserResponse['Nombre']}" ha sido creado y asignado a esta logia.');
+                            setState(() {
+                            _usersFuture = _fetchLogiaMembers();
+                            _selectedUserToEdit = newUserId; 
+                          });
+                        }
+                      } catch (e) {
+
+                        _showErrorDialog('Error al Crear Miembro', e.toString());
+                      } finally {
+                        if (mounted) setState(() => _isLoading = false);
+                      }
+                    }
+                  },
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+
   Widget _buildTextField(TextEditingController controller, String label, Map<String, Color> theme, {bool isPassword = false, TextInputType keyboardType = TextInputType.text, String? Function(String?)? validator}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
@@ -363,12 +462,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
           focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: theme['accent']!)),
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         ),
-        validator: validator ?? (value) {
-          if (label.contains('Correo') && (value == null || !value.contains('@'))) {
-            return 'Ingresa un correo válido.';
-          }
-          return null;
-        },
+        validator: validator,
       ),
     );
   }
@@ -376,7 +470,6 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
   Widget _buildPersonalInfoForm(Map<String, Color> theme) {
     return Column(
       children: [
-        // --- 1. Encabezado Tipo PagoScreen (Card Header) ---
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -404,8 +497,6 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
             ],
           ),
         ),
-
-        // --- 2. Contenido Principal con Card de Edición ---
         Expanded(
           child: Form(
             key: _formKey,
@@ -419,9 +510,6 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // No se incluye el título "Editar Datos Personales" aquí, ya está en el header card.
-                      
-                      // Campos de Edición (sin Contraseña)
                       _buildTextField(_emailController, 'Correo Electrónico', theme, keyboardType: TextInputType.emailAddress),
                       _buildTextField(_phoneController, 'Teléfono', theme, keyboardType: TextInputType.phone),
                       _buildTextField(_dobController, 'Fecha de Nacimiento (YYYY-MM-DD)', theme, keyboardType: TextInputType.datetime),
@@ -429,7 +517,6 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                       
                       const SizedBox(height: 20),
 
-                      // Botón de Guardar Cambios
                       ElevatedButton.icon(
                         onPressed: _isLoading ? null : _updatePersonalInfo,
                         icon: _isLoading ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : const Icon(Icons.save, color: Colors.white),
@@ -442,8 +529,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                       ),
                       
                       const SizedBox(height: 30),
-                      
-                      // Botón de Cambiar Contraseña (Abre el diálogo)
+
                       OutlinedButton.icon(
                         onPressed: _isLoading ? null : () => _showChangePasswordDialog(theme),
                         icon: const Icon(Icons.lock_open),
@@ -473,97 +559,29 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     );
   }
 
-
-  Widget _buildAdminPanel(Map<String, Color> theme) {
-    // ... (El código del panel de administración se mantiene igual)
-     final List<PerfilOpcion> perfiles = widget.root.user.perfiles_opciones;
-    //final List<LogiaCatalogo> logias = widget.root.catalogos.logias_catalogo;
-    final List<int> grados = List.generate(34, (index) => index); 
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+  Widget _buildAdminHeader(Map<String, Color> theme) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme['card'],
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)]
+      ),
+      child: Row(
         children: [
-          Text(
-            "Herramientas de Administración",
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: theme['accent']),
+          CircleAvatar(
+            backgroundColor: theme['bg'],
+            radius: 24,
+            child: Icon(Icons.admin_panel_settings, color: theme['accent']),
           ),
-          const Divider(height: 30),
-
-          Text("Modificar Perfil, Logia y Grado de Usuario", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: theme['text'])),
-          const SizedBox(height: 10),
-
-          FutureBuilder<List<Map<String, dynamic>>>(
-            future: _usersFuture,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              if (snapshot.hasError || snapshot.data == null || snapshot.data!.isEmpty) {
-                return const Text('Error al cargar usuarios o no hay usuarios disponibles.');
-              }
-              
-              final users = snapshot.data!;
-              return DropdownButtonFormField<int>(
-                decoration: InputDecoration(labelText: 'Usuario a Editar', labelStyle: TextStyle(color: theme['text']?.withOpacity(0.7))),
-                value: _selectedUserToEdit,
-                dropdownColor: theme['card'],
-                items: users.map((user) => DropdownMenuItem<int>(
-                  value: user['idUsuario'],
-                  child: Text('${user['Nombre']} (ID: ${user['idUsuario']})', style: TextStyle(color: theme['text'])),
-                )).toList(),
-                onChanged: (val) => setState(() => _selectedUserToEdit = val),
-              );
-            },
-          ),
-          const SizedBox(height: 16),
-
-          DropdownButtonFormField<int>(
-            decoration: InputDecoration(labelText: 'Nuevo Perfil', labelStyle: TextStyle(color: theme['text']?.withOpacity(0.7))),
-            value: _selectedNewProfileId,
-            dropdownColor: theme['card'],
-            items: perfiles.map((p) => DropdownMenuItem<int>(
-              value: p.idPerfil,
-              child: Text(p.idPerfil as String, style: TextStyle(color: theme['text'])),
-            )).toList(),
-            onChanged: (val) => setState(() => _selectedNewProfileId = val),
-          ),
-          const SizedBox(height: 16),
-
-          //DropdownButtonFormField<int>(
-            //decoration: InputDecoration(labelText: 'Nueva Logia (iddLogia)', labelStyle: TextStyle(color: theme['text']?.withOpacity(0.7))),
-            //value: _selectedNewLogiaId,
-            //dropdownColor: theme['card'],
-            //items: logias.map((l) => DropdownMenuItem<int>(
-              //value: l.iddLogia,
-              //child: Text(l.Nombre, style: TextStyle(color: theme['text'])),
-            //)).toList(),
-            //onChanged: (val) => setState(() => _selectedNewLogiaId = val),
-          //),
-          //const SizedBox(height: 16),
-
-          DropdownButtonFormField<int>(
-            decoration: InputDecoration(labelText: 'Nuevo Grado (idGrado)', labelStyle: TextStyle(color: theme['text']?.withOpacity(0.7))),
-            value: _selectedNewGrado,
-            dropdownColor: theme['card'],
-            items: grados.map((g) => DropdownMenuItem<int>(
-              value: g,
-              child: Text(g.toString(), style: TextStyle(color: theme['text'])),
-            )).toList(),
-            onChanged: (val) => setState(() => _selectedNewGrado = val),
-          ),
-          const SizedBox(height: 30),
-
-          // Botón de Actualización SP
-          ElevatedButton.icon(
-            onPressed: _isLoading ? null : _callAdminSp,
-            icon: _isLoading ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : const Icon(Icons.security, color: Colors.white),
-            label: Text(_isLoading ? 'Ejecutando SP...' : 'Actualizar Usuario (SP 8)', style: const TextStyle(color: Colors.white)),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: theme['accent'],
-              padding: const EdgeInsets.symmetric(vertical: 15),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Herramientas de Administración', style: TextStyle(color: theme['text'], fontWeight: FontWeight.bold, fontSize: 16)),
+                Text('Gestión de perfiles, logias y grados', style: TextStyle(color: theme['text']?.withOpacity(0.7), fontSize: 12)),
+              ],
             ),
           ),
         ],
@@ -571,13 +589,129 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     );
   }
 
-  // --- WIDGET PRINCIPAL ---
+  Widget _buildAdminPanel(Map<String, Color> theme) {
+    final List<PerfilCatalogo> profilesDisponibles = widget.root.catalogos.perfiles_catalogo;
+    final String adminGrupo = widget.selectedProfile?.Grupo ?? '';
+    List<GradoCatalogo> gradosFiltrados = widget.root.catalogos.grados_catalogo[adminGrupo] ?? [];
 
+    _selectedNewLogiaId = widget.selectedProfile?.idLogia;
+    return Column(
+      children: [
+        _buildAdminHeader(theme),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text("Asignar/Actualizar Rol de Usuario", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: theme['text'])),
+                    const SizedBox(height: 10),
+          
+                    FutureBuilder<List<Map<String, dynamic>>>(
+                      future: _usersFuture,
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
+                        if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) return const Text('No hay usuarios para mostrar.');
+                        
+                        final users = snapshot.data!;
+                        return DropdownButtonFormField<int>(
+                          isExpanded: true, 
+                          decoration: InputDecoration(labelText: 'Usuario a Editar', labelStyle: TextStyle(color: theme['text']?.withOpacity(0.7))),
+                          value: _selectedUserToEdit,
+                          dropdownColor: theme['card'],
+                          items: users.map((user) => DropdownMenuItem<int>(
+                            value: user['idUsuario'],
+                            child: Text('${user['Nombre']} (ID: ${user['idUsuario']})', style: TextStyle(color: theme['text']), overflow: TextOverflow.ellipsis),
+                          )).toList(),
+                          onChanged: (val) {
+                            setState(() {
+                              _selectedUserToEdit = val;
+                              if (val != null) {
+                                final selectedUser = widget.root.catalogos.listaLogiasPorUsuario.firstWhere((u) => u.idUsuario == val);
+                                final userProfileInThisLodge = selectedUser.perfiles.firstWhere(
+                                  (p) => p.idLogia == widget.selectedProfile?.idLogia,
+                                  orElse: () => MiembroPerfil(idLogia: 0, Tratamiento: '', Grado: 0, idPerfil: 0, PerfilNombre: ''),
+                                );
+                                _selectedNewGrado = userProfileInThisLodge.Grado;
+                              } else {
+                                _selectedNewGrado = null;
+                              }
+                            });
+                          },
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 16),
+          
+                    DropdownButtonFormField<int>(
+                      isExpanded: true,
+                      decoration: InputDecoration(labelText: 'Nuevo Perfil', labelStyle: TextStyle(color: theme['text']?.withOpacity(0.7))),
+                      value: ensureValidDropdownValue(_selectedNewProfileId, profilesDisponibles.map((p) => p.idPerfil).toList()),
+                      dropdownColor: theme['card'],
+                      items: profilesDisponibles.map((p) => DropdownMenuItem<int>( // Usamos el catálogo completo
+                        value: p.idPerfil,
+                        child: Text(p.Nombre, style: TextStyle(color: theme['text']), overflow: TextOverflow.ellipsis),
+                      )).toList(),
+                      onChanged: (val) {
+                        setState(() {
+                          _selectedNewProfileId = val;
+                          _selectedNewGrado = null; 
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 16),
+          
+                    DropdownButtonFormField<int>(
+                      isExpanded: true, 
+                      decoration: InputDecoration(labelText: 'Nuevo Grado', labelStyle: TextStyle(color: theme['text']?.withOpacity(0.7))),
+                      value: ensureValidDropdownValue(_selectedNewGrado, gradosFiltrados.map((g) => g.idGrado).toList()),
+                      dropdownColor: theme['card'],
+                      items: gradosFiltrados.map((g) => DropdownMenuItem<int>(
+                        value: g.idGrado,
+                        child: Text('${g.Descripcion} (Grado ${g.idGrado})', style: TextStyle(color: theme['text']), overflow: TextOverflow.ellipsis),
+                      )).toList(),
+                      onChanged: (val) => setState(() => _selectedNewGrado = val),
+                    ),
+                    const SizedBox(height: 30),
+          
+                    ElevatedButton.icon(
+                      onPressed: _isLoading ? null : _callAdminSp,
+                      icon: _isLoading ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : const Icon(Icons.security_update_good, color: Colors.white),
+                      label: Text(_isLoading ? 'Ejecutando...' : 'Asignar Rol (SP 8)', style: const TextStyle(color: Colors.white)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: theme['accent'],
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                    ),
+                    const Divider(height: 40),
+                    OutlinedButton.icon(
+                      onPressed: () => _showAddUserDialog(theme),
+                      icon: const Icon(Icons.person_add),
+                      label: const Text('Registrar Nuevo Usuario'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: theme['accent'],
+                        side: BorderSide(color: theme['accent']!),
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
   @override
   Widget build(BuildContext context) {
     final theme = _getThemeColors();
-    
-    // Admin (Perfil 1): usa TabBar
     if (_canAdmin) {
       return DefaultTabController(
         length: 2,
@@ -585,8 +719,8 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
           backgroundColor: theme['bg'],
           appBar: AppBar(
             title: Text('Editar Perfil / Admin', style: TextStyle(color: theme['text'])),
-            backgroundColor: theme['bg'], // Estilo solicitado
-            elevation: 0,                // Estilo solicitado
+            backgroundColor: theme['bg'],
+            elevation: 0,               
             iconTheme: IconThemeData(color: theme['text']),
             bottom: TabBar(
               labelColor: theme['accent'],
@@ -601,21 +735,20 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
           drawer: AppDrawer(root: widget.root, selectedProfile: widget.selectedProfile!),
           body: TabBarView(
             children: [
-              _buildPersonalInfoForm(theme), // Pestaña 1: Datos personales
-              _buildAdminPanel(theme),      // Pestaña 2: Administración
+              _buildPersonalInfoForm(theme), 
+              _buildAdminPanel(theme),      
             ],
           ),
         ),
       );
     } 
-    // Usuario Estándar: solo muestra el formulario personal
     else {
       return Scaffold(
         backgroundColor: theme['bg'],
         appBar: AppBar(
           title: Text('Editar Mi Perfil', style: TextStyle(color: theme['text'])),
-          backgroundColor: theme['bg'], // Estilo solicitado
-          elevation: 0,                // Estilo solicitado
+          backgroundColor: theme['bg'], 
+          elevation: 0,                
           iconTheme: IconThemeData(color: theme['text']),
         ),
         drawer: AppDrawer(root: widget.root, selectedProfile: widget.selectedProfile!),
@@ -624,13 +757,13 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     }
   }
 
-  // --- DIALOGS ---
-
   void _showErrorDialog(String title, String msg) {
+    if (!mounted) return;
     showDialog(context: context, builder: (_) => AlertDialog(title: Text(title, style: const TextStyle(color: Colors.red)), content: Text(msg), actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text("OK"))]));
   }
   
   void _showSuccessDialog(String title, String msg) {
+    if (!mounted) return;
     showDialog(context: context, builder: (_) => AlertDialog(title: Text(title, style: const TextStyle(color: Colors.green)), content: Text(msg), actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text("OK"))]));
   }
 }

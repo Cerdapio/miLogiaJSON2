@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 // Asegúrate de que las rutas sean correctas según tu estructura de carpetas
 import '../config/auth_config.dart'; // Contiene clases como LogiaTheme (si lo usas)
 import '../models/user_model.dart'; // Contiene RootModel, Documento, PerfilOpcion, etc.
 import 'app_drawer.dart'; // Tu clase AppDrawer
+import '../utils/dropdown_utils.dart';
 
 class DocumentsScreen extends StatefulWidget {
   final RootModel root;
@@ -17,7 +20,7 @@ class DocumentsScreen extends StatefulWidget {
   State<DocumentsScreen> createState() => _DocumentsScreenState();
 }
 
-class _DocumentsScreenState extends State<DocumentsScreen> {
+class _DocumentsScreenState extends State<DocumentsScreen> with SingleTickerProviderStateMixin {
   final _supabase = Supabase.instance.client;
   
   // Variables para el formulario
@@ -28,28 +31,36 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
 
   // Mapa para agrupar documentos
   Map<int, List<Documento>> _groupedDocuments = {};
+  
+  // _radios eliminada. Usamos widget.root.user.radios
 
   @override
   void initState() {
     super.initState();
     _groupDocumentsByGrade();
+    // _fetchRadios() eliminado
   }
+
+  @override
+  void dispose() {
+    _descripcionController.dispose();
+    super.dispose();
+  }
+
+  // Se elimina didChangeDependencies ya que _isSecretary se calcula en initState
 
   /// CORRECCIÓN FINAL: Filtra por la Logia Seleccionada y luego agrupa por el idGrado del documento.
   void _groupDocumentsByGrade() {
+    // ... (El contenido de esta función no cambia, pero necesitamos asegurarnos de que se conecta bien)
     final Map<int, List<Documento>> tempMap = {};
     
-    // 1. OBTENER EL ID DE LA LOGIA ACTUAL
     final int currentLogiaId = widget.selectedProfile?.idLogia ?? 0;
     
-    // 2. FILTRAR: Solo documentos que pertenecen a la Logia actual.
     final filteredDocuments = widget.root.user.documentos.where((userDoc) {
       return userDoc.iddLogia == currentLogiaId; 
     }).toList();
     
-    // 3. AGRUPAR: Usar 'idGrado' de los documentos filtrados para la agrupación.
     for (var userDoc in filteredDocuments) {
-      // Usamos 'idGrado' directamente. Si es nulo o inválido, se agrupa bajo '0'.
       final int gradoEncontrado = userDoc.idGrado ?? 0; 
       
       if (!tempMap.containsKey(gradoEncontrado)) {
@@ -58,7 +69,6 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
       tempMap[gradoEncontrado]!.add(userDoc);
     }
 
-    // Ordenar por fecha
     tempMap.forEach((key, list) {
       list.sort((a, b) => b.Fecha.compareTo(a.Fecha));
     });
@@ -66,6 +76,31 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
     setState(() {
       _groupedDocuments = tempMap;
     });
+  }
+
+  List<RadioModel> _getFilteredRadios() {
+    final currentLogiaId = widget.selectedProfile?.idLogia ?? 0;
+    
+    // Buscar idGranLogia de la logia actual usando logias_catalogo
+    int idGranLogia = 0;
+    try {
+        final currentLogiaData = widget.root.catalogos.logias_catalogo
+          .firstWhere((l) => l.idLogia == currentLogiaId);
+        idGranLogia = currentLogiaData.idGranLogia;
+    } catch (_) {}
+
+    return widget.root.user.radios.where((radio) {
+      // 1. target_audience = 'all_lodges' (Para todos)
+      if (radio.targetAudience == 'all_lodges') return true;
+
+      // 2. issuing_logia_id = currentLogiaId (Emitidos por mi propia logia)
+      if (radio.issuingLogiaId == currentLogiaId) return true;
+
+      // 3. target_audience = 'subordinate_lodges' AND issuing_logia_id = idGranLogia
+      if (radio.targetAudience == 'subordinate_lodges' && radio.issuingLogiaId == idGranLogia) return true;
+
+      return false;
+    }).toList();
   }
 
   // --- LÓGICA DE PAGO Y SOLICITUD ---
@@ -207,6 +242,173 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
         Navigator.of(context).pop(); 
         _showPaymentSlipDialog(idPagoGenerado, importe, _selectedDocType!.Descripcion);
       }
+  }
+
+  Widget _infoRow(String label, String value, Map<String, Color> theme, {bool isBold = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: TextStyle(color: theme['text'], fontSize: 13)),
+          Flexible(
+            child: Text(value, 
+              style: TextStyle(
+                color: isBold ? theme['accent'] : theme['text'], 
+                fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+                fontSize: isBold ? 15 : 13
+              ),
+              textAlign: TextAlign.right,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showErrorDialog(String title, String msg) {
+    showDialog(context: context, builder: (_) => AlertDialog(title: Text(title, style: const TextStyle(color: Colors.red)), content: Text(msg), actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text("OK"))]));
+  }
+  
+  void _showSuccessDialog(String title, String msg) {
+    showDialog(context: context, builder: (_) => AlertDialog(title: Text(title, style: const TextStyle(color: Colors.green)), content: Text(msg), actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text("OK"))]));
+  }
+
+  // --- WIDGETS DE UI ---
+
+  Widget _buildMyDocumentsView(Map<String, Color> theme) {
+    final sortedGrades = _groupedDocuments.keys.toList()..sort();
+    final visibleRadios = _getFilteredRadios(); // Obtener radios filtrados
+
+    return Column(
+      children: [
+        // ... (Header)
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: theme['card'],
+            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)]
+          ),
+          child: Row(
+            children: [
+              CircleAvatar(
+                backgroundColor: theme['bg'],
+                radius: 24,
+                child: Icon(Icons.folder_shared, color: theme['accent']),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Biblioteca Personal', style: TextStyle(color: theme['text'], fontWeight: FontWeight.bold, fontSize: 16)),
+                    Text('${_groupedDocuments.values.expand((x) => x).length} documentos de esta Logia', style: TextStyle(color: theme['text']?.withOpacity(0.7), fontSize: 12)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.only(bottom: 80),
+            children: [
+              // SECCIÓN DE RADIOS / COMUNICADOS
+              if (visibleRadios.isNotEmpty)
+                Card(
+                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  color: theme['card'],
+                  elevation: 1,
+                  child: Theme(
+                    data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                    child: ExpansionTile(
+                      initiallyExpanded: true,
+                      iconColor: theme['accent'],
+                      collapsedIconColor: theme['text'],
+                      leading: Icon(Icons.radio, color: theme['accent']),
+                      title: Text(
+                        'Comunicados Oficiales',
+                        style: TextStyle(color: theme['accent'], fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                      children: visibleRadios.map((radio) {
+                        return Container( // Renderizado de cada Radio
+                          margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          child: Card(
+                            elevation: 2, 
+                            color: Colors.white,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8), side: BorderSide(color: Colors.grey.shade200)),
+                            child: ListTile( // Usando ListTile para consistencia
+                              leading: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(color: theme['bg'], shape: BoxShape.circle),
+                                child: Icon(Icons.campaign, color: theme['text']?.withOpacity(0.7), size: 20),
+                              ),
+                              title: Text(radio.title, style: TextStyle(color: theme['text'], fontWeight: FontWeight.w600)),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (radio.description.isNotEmpty)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 4.0),
+                                      child: Text(radio.description, style: TextStyle(color: theme['text']?.withOpacity(0.8), fontSize: 12), maxLines: 2, overflow: TextOverflow.ellipsis),
+                                    ),
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 4.0),
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.calendar_today, size: 12, color: theme['text']?.withOpacity(0.5)),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          radio.createdAt.isNotEmpty 
+                                            ? DateFormat('dd/MM/yyyy').format(DateTime.parse(radio.createdAt))
+                                            : '', 
+                                          style: TextStyle(color: theme['text']?.withOpacity(0.5), fontSize: 11)
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              onTap: () async {
+                                if (radio.documentUrl != null && radio.documentUrl!.isNotEmpty) {
+                                  final uri = Uri.parse(radio.documentUrl!);
+                                  if (await canLaunchUrl(uri)) {
+                                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                                  } else {
+                                    if (context.mounted) {
+                                       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("No se pudo abrir el documento: ${radio.title}")));
+                                    }
+                                  }
+                                }
+                              },
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ),
+
+              // SECCIÓN DE DOCUMENTOS POR GRADO
+              if (sortedGrades.isEmpty && visibleRadios.isEmpty)
+                Padding(
+
+      final idPagoGenerado = insertRes['idPago'] as int;
+
+      await _supabase.from('movdPagos').insert({
+        'idPago': idPagoGenerado,
+        'iddConcepto': iddConceptoReal, // GUARDAMOS EL ID ESPECÍFICO CORRECTO
+        'Cantidad': 1,
+      });
+
+      if (mounted) {
+        Navigator.of(context).pop(); 
+        _showPaymentSlipDialog(idPagoGenerado, importe, _selectedDocType!.Descripcion);
+      }
 
     } on PostgrestException catch (e) {
       throw Exception(e.message);
@@ -299,9 +501,10 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
                         isExpanded: true,
                         decoration: InputDecoration(labelText: 'Tipo de Documento', labelStyle: TextStyle(color: theme['text'])),
                         dropdownColor: theme['card'],
+                        value: ensureValidDropdownValue(_selectedDocType, docsSolicitables),
                         items: docsSolicitables.map((d) => DropdownMenuItem(
                           value: d,
-                          child: Text(d.Descripcion, style: TextStyle(color: theme['text'])),
+                          child: Text(d.Descripcion, style: TextStyle(color: theme['text']), overflow: TextOverflow.ellipsis),
                         )).toList(),
                         onChanged: (val) {
                           setStateDialog(() {
@@ -315,15 +518,17 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
 
                     if (_selectedDocType != null && _selectedDocType!.RequiereGrado && selectableDetails.isNotEmpty)
                       DropdownButtonFormField<int>(
+                        isExpanded: true,
                         decoration: InputDecoration(labelText: 'Grado (Max: $maxGradoUsuario)', labelStyle: TextStyle(color: theme['text'])),
                         dropdownColor: theme['card'],
                         // USANDO selectableDetails
+                        value: ensureValidDropdownValue(_selectedGrado, selectableDetails.map((d) => d.Grado).toList()),
                         items: selectableDetails.map((detail) {
                           return DropdownMenuItem<int>(
                             // El valor (value) sigue siendo el int del grado
                             value: detail.Grado,
                             // El texto (child) ahora es NombreCorto
-                            child: Text(detail.NombreCorto, style: TextStyle(color: theme['text'])),
+                            child: Text(detail.NombreCorto, style: TextStyle(color: theme['text']), overflow: TextOverflow.ellipsis),
                           );
                         }).toList(),
                         onChanged: (val) {
@@ -475,63 +680,131 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
     showDialog(context: context, builder: (_) => AlertDialog(title: Text(title, style: const TextStyle(color: Colors.green)), content: Text(msg), actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text("OK"))]));
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = _getThemeColors();
-    // Obtener las claves (grados) y ordenarlas
-    final sortedGrades = _groupedDocuments.keys.toList()..sort();
+  // --- WIDGETS DE UI ---
 
-    return Scaffold(
-      backgroundColor: theme['bg'],
-      appBar: AppBar(
-        title: Text('Mis Documentos', style: TextStyle(color: theme['text'])),
-        backgroundColor: theme['bg'],
-        elevation: 0,
-        iconTheme: IconThemeData(color: theme['text']),
-      ),
-      drawer: AppDrawer(
-        root: widget.root, 
-        selectedProfile: widget.selectedProfile ?? widget.root.user.perfiles_opciones.first 
-      ),
-      body: Column(
-        children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: theme['card'], 
-                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)]
+  Widget _buildMyDocumentsView(Map<String, Color> theme) {
+    final sortedGrades = _groupedDocuments.keys.toList()..sort();
+    return Column(
+      children: [
+        // ... (Header)
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: theme['card'],
+            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)]
+          ),
+          child: Row(
+            children: [
+              CircleAvatar(
+                backgroundColor: theme['bg'],
+                radius: 24,
+                child: Icon(Icons.folder_shared, color: theme['accent']),
               ),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    backgroundColor: theme['bg'],
-                    radius: 24,
-                    child: Icon(Icons.folder_shared, color: theme['accent']),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Biblioteca Personal', style: TextStyle(color: theme['text'], fontWeight: FontWeight.bold, fontSize: 16)),
-                        Text('${_groupedDocuments.values.expand((x) => x).length} documentos de esta Logia', style: TextStyle(color: theme['text']?.withOpacity(0.7), fontSize: 12)),
-                      ],
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Biblioteca Personal', style: TextStyle(color: theme['text'], fontWeight: FontWeight.bold, fontSize: 16)),
+                    Text('${_groupedDocuments.values.expand((x) => x).length} documentos de esta Logia', style: TextStyle(color: theme['text']?.withOpacity(0.7), fontSize: 12)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.only(bottom: 80),
+            children: [
+              // SECCIÓN DE RADIOS / COMUNICADOS
+              if (_radios.isNotEmpty)
+                Card(
+                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  color: theme['card'],
+                  elevation: 1,
+                  child: Theme(
+                    data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                    child: ExpansionTile(
+                      initiallyExpanded: true,
+                      iconColor: theme['accent'],
+                      collapsedIconColor: theme['text'],
+                      leading: Icon(Icons.radio, color: theme['accent']),
+                      title: Text(
+                        'Comunicados Oficiales',
+                        style: TextStyle(color: theme['accent'], fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                      children: _radios.map((radio) {
+                        return Container( // Renderizado de cada Radio
+                          margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          child: Card(
+                            elevation: 2, 
+                            color: Colors.white,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8), side: BorderSide(color: Colors.grey.shade200)),
+                            child: ListTile( // Usando ListTile para consistencia
+                              leading: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(color: theme['bg'], shape: BoxShape.circle),
+                                child: Icon(Icons.campaign, color: theme['text']?.withOpacity(0.7), size: 20),
+                              ),
+                              title: Text(radio['title'] ?? 'Sin título', style: TextStyle(color: theme['text'], fontWeight: FontWeight.w600)),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (radio['description'] != null)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 4.0),
+                                      child: Text(radio['description'], style: TextStyle(color: theme['text']?.withOpacity(0.8), fontSize: 12), maxLines: 2, overflow: TextOverflow.ellipsis),
+                                    ),
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 4.0),
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.calendar_today, size: 12, color: theme['text']?.withOpacity(0.5)),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          radio['created_at'] != null 
+                                            ? DateFormat('dd/MM/yyyy').format(DateTime.parse(radio['created_at']))
+                                            : '', 
+                                          style: TextStyle(color: theme['text']?.withOpacity(0.5), fontSize: 11)
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              onTap: () async {
+                                if (radio['document_url'] != null) {
+                                  final uri = Uri.parse(radio['document_url']);
+                                  if (await canLaunchUrl(uri)) {
+                                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                                  } else {
+                                    if (context.mounted) {
+                                       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("No se pudo abrir el documento: ${radio['title']}")));
+                                    }
+                                  }
+                                }
+                              },
+                            ),
+                          ),
+                        );
+                      }).toList(),
                     ),
                   ),
-                ],
-              ),
-            ),
-            
-            const SizedBox(height: 10),
+                ),
 
-            Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.only(bottom: 80),
-                itemCount: sortedGrades.length,
-                itemBuilder: (context, index) {
-                  final grado = sortedGrades[index];
+              // SECCIÓN DE DOCUMENTOS POR GRADO
+              if (sortedGrades.isEmpty && _radios.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Center(child: Text("No tienes documentos en esta logia.", style: TextStyle(color: theme['text']))),
+                )
+              else
+                ...sortedGrades.map((grado) {
                   final docs = _groupedDocuments[grado]!;
                   final gradoTitulo = grado == 0 ? "Documentos Generales" : "Grado $grado";
 
@@ -598,11 +871,32 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
                       ),
                     ),
                   );
-                },
-              ),
-            ),
-        ],
+                }).toList(),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = _getThemeColors();
+
+    return Scaffold(
+      backgroundColor: theme['bg'],
+      appBar: AppBar(
+        title: Text('Mis Documentos', style: TextStyle(color: theme['text'])),
+        backgroundColor: theme['bg'],
+        elevation: 0,
+        iconTheme: IconThemeData(color: theme['text']),
       ),
+      drawer: AppDrawer(
+        root: widget.root,
+        selectedProfile: widget.selectedProfile ?? widget.root.user.perfiles_opciones.first,
+      ),
+      body: _buildMyDocumentsView(theme),
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: theme['accent'],
         foregroundColor: Colors.white,

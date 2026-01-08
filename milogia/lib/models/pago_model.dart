@@ -6,6 +6,7 @@ class PagoModel {
   int idFormaPago;
   String folio;
   bool activo;
+  String estatus;
 
   PagoModel({
     required this.idPago,
@@ -15,17 +16,19 @@ class PagoModel {
     required this.idFormaPago,
     this.folio = '',
     this.activo = true,
+    this.estatus = 'Pendiente',
   });
 
   factory PagoModel.fromJson(Map<String, dynamic> json) {
     return PagoModel(
       idPago: json['idPago'] ?? 0,
       idUsuario: json['idUsuario'] ?? 0,
-      importe: json['importe']?.toDouble() ?? 0.0,
-      fecha: json['fecha'] ?? '',
+      importe: (json['importe'] ?? json['Importe'] ?? 0).toDouble(),
+      fecha: json['fecha'] ?? json['Fecha'] ?? '',
       idFormaPago: json['idFormaPago'] ?? 0,
-      folio: json['folio'] ?? '',
-      activo: json['activo'] ?? true,
+      folio: json['folio'] ?? json['Folio'] ?? '',
+      activo: json['activo'] ?? json['Activo'] ?? true,
+      estatus: json['estatus'] ?? json['Estatus'] ?? 'Pendiente',
     );
   }
 
@@ -38,6 +41,7 @@ class PagoModel {
       'idFormaPago': idFormaPago,
       'folio': folio,
       'activo': activo,
+      'estatus': estatus,
     };
   }
 }

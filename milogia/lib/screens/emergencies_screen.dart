@@ -10,6 +10,7 @@ import '../models/user_model.dart';
 
 import '../models/emergency_model.dart';
 import 'app_drawer.dart';
+import '../utils/dropdown_utils.dart';
 
 final _supabase = Supabase.instance.client;
 
@@ -176,7 +177,7 @@ class _EmergenciesScreenState extends State<EmergenciesScreen> {
                 ),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<int>(
-                  value: selectedParentezco,
+                  value: ensureValidDropdownValue(selectedParentezco, widget.root.catalogos.parentezcos.map((p) => p.idParentezco).toList()),
                   decoration: const InputDecoration(labelText: 'Parentezco'),
                   items: widget.root.catalogos.parentezcos
                       .map((p) => DropdownMenuItem<int>(value: p.idParentezco, child: Text(p.Descripcion)))

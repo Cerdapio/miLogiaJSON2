@@ -55,6 +55,8 @@ class User {
   String CorreoElectronico;
   List<PerfilOpcion> perfiles_opciones;
   List<ContactoEmergencia> contactosEmergencia;
+  String? authUuid; // Supabase Auth UUID
+  List<RadioModel> radios; // NUEVO: Radios cargados al inicio
 
   User({
     required this.Foto,
@@ -70,6 +72,8 @@ class User {
     required this.CorreoElectronico,
     required this.perfiles_opciones,
     required this.contactosEmergencia,
+    this.authUuid,
+    required this.radios,
   });
 
   factory User.fromJson(Map<String, dynamic> json) => User(
@@ -86,6 +90,8 @@ class User {
         CorreoElectronico: json['CorreoElectronico'] ?? '',
         perfiles_opciones: (json['perfiles_opciones'] as List<dynamic>? ?? []).map((e) => PerfilOpcion.fromJson(e)).toList(),
         contactosEmergencia: (json['contactosEmergencia'] as List<dynamic>? ?? []).map((e) => ContactoEmergencia.fromJson(e)).toList(),
+        authUuid: json['auth_uuid'],
+        radios: (json['radios'] as List<dynamic>? ?? []).map((e) => RadioModel.fromJson(e)).toList(),
       );
 
   Map<String, dynamic> toJson() => {
@@ -102,6 +108,8 @@ class User {
         'CorreoElectronico': CorreoElectronico,
         'perfiles_opciones': perfiles_opciones.map((e) => e.toJson()).toList(),
         'contactosEmergencia': contactosEmergencia.map((e) => e.toJson()).toList(),
+        'auth_uuid': authUuid,
+        'radios': radios.map((e) => e.toJson()).toList(),
       };
 void updateFromJson(Map<String, dynamic> json) {
     if (json.containsKey('Telefono')) {
@@ -140,6 +148,7 @@ class Pago {
   int Cantidad;
   int iddLogia;
   String Descripcion;
+  String Estatus;
 
   Pago({
     required this.Costo,
@@ -151,6 +160,7 @@ class Pago {
     required this.Cantidad,
     required this.iddLogia,
     required this.Descripcion,
+    this.Estatus = 'Pendiente',
   });
 
   factory Pago.fromJson(Map<String, dynamic> json) => Pago(
@@ -163,6 +173,7 @@ class Pago {
         Cantidad: json['Cantidad'] ?? 0,
         iddLogia: json['iddLogia'] ?? 0,
         Descripcion: json['Descripcion'] ?? '',
+        Estatus: json['Estatus'] ?? 'Pendiente',
       );
 
   Map<String, dynamic> toJson() => {
@@ -174,7 +185,72 @@ class Pago {
         'Importe': Importe,
         'Cantidad': Cantidad,
         'iddLogia': iddLogia,
-        'Descripcion': Descripcion,
+        'Description': Descripcion,
+        'Estatus': Estatus,
+      };
+}
+
+class PagoReportado {
+  String idReporte;
+  int iddLogia;
+  int idUsuario;
+  String FechaReporte;
+  String FechaPagoReal;
+  double Monto;
+  String? FolioBancario;
+  String? ReferenciaUnica;
+  String? UrlComprobante;
+  String MetodoPago;
+  String Estatus;
+  String? NotasRevision;
+  int? idPago; // NUEVO: Relación con movcPagos
+
+  PagoReportado({
+    required this.idReporte,
+    required this.iddLogia,
+    required this.idUsuario,
+    required this.FechaReporte,
+    required this.FechaPagoReal,
+    required this.Monto,
+    this.FolioBancario,
+    this.ReferenciaUnica,
+    this.UrlComprobante,
+    required this.MetodoPago,
+    required this.Estatus,
+    this.NotasRevision,
+    this.idPago,
+  });
+
+  factory PagoReportado.fromJson(Map<String, dynamic> json) => PagoReportado(
+        idReporte: json['idReporte'] ?? '',
+        iddLogia: json['iddLogia'] ?? 0,
+        idUsuario: json['idUsuario'] ?? 0,
+        FechaReporte: json['FechaReporte'] ?? '',
+        FechaPagoReal: json['FechaPagoReal'] ?? '',
+        Monto: (json['Monto'] ?? 0).toDouble(),
+        FolioBancario: json['FolioBancario'],
+        ReferenciaUnica: json['ReferenciaUnica'],
+        UrlComprobante: json['UrlComprobante'],
+        MetodoPago: json['MetodoPago'] ?? 'Transferencia',
+        Estatus: json['Estatus'] ?? 'Revision',
+        NotasRevision: json['NotasRevision'],
+        idPago: json['idPago'],
+      );
+
+  Map<String, dynamic> toJson() => {
+        'idReporte': idReporte,
+        'iddLogia': iddLogia,
+        'idUsuario': idUsuario,
+        'FechaReporte': FechaReporte,
+        'FechaPagoReal': FechaPagoReal,
+        'Monto': Monto,
+        'FolioBancario': FolioBancario,
+        'ReferenciaUnica': ReferenciaUnica,
+        'UrlComprobante': UrlComprobante,
+        'MetodoPago': MetodoPago,
+        'Estatus': Estatus,
+        'NotasRevision': NotasRevision,
+        'idPago': idPago,
       };
 }
 
@@ -227,6 +303,7 @@ class PerfilOpcion {
   String Significado;
   String Tratamiento;
   String PerfilNombre;
+  bool esGranLogia; // NUEVO: Para identificar si el perfil es sobre una Gran Logia.
 
   PerfilOpcion({
     required this.Grupo,
@@ -241,6 +318,7 @@ class PerfilOpcion {
     required this.Significado,
     required this.Tratamiento,
     required this.PerfilNombre,
+    required this.esGranLogia,
   });
 
   factory PerfilOpcion.fromJson(Map<String, dynamic> json) => PerfilOpcion(
@@ -256,6 +334,7 @@ class PerfilOpcion {
         Significado: json['Significado'] ?? '',
         Tratamiento: json['Tratamiento'] ?? '',
         PerfilNombre: json['PerfilNombre'] ?? '',
+        esGranLogia: json['esGranLogia'] ?? false,
       );
 
   Map<String, dynamic> toJson() => {
@@ -271,6 +350,7 @@ class PerfilOpcion {
         'Significado': Significado,
         'Tratamiento': Tratamiento,
         'PerfilNombre': PerfilNombre,
+        'esGranLogia': esGranLogia,
       };
 
       
@@ -337,19 +417,25 @@ class ContactoEmergencia {
         'idParentezco': idParentezco,
       };
 }
-
-/* Catalogos y submodelos */
 class Catalogos {
   List<Parentezco> parentezcos;
   List<ConceptoCatalogo> conceptos_catalogo;
   List<DocumentosCatalogo> documentos_catalogo;
   List<ListaLogiasPorUsuario> listaLogiasPorUsuario;
+  Map<String, List<GradoCatalogo>> grados_catalogo;
+  List<PerfilCatalogo> perfiles_catalogo;
+  List<Firma> firmas_catalogo; // NUEVO: Catálogo de firmas
+  List<LogiaCatalogo> logias_catalogo; // NUEVO: Catálogo de logias
 
   Catalogos({
     required this.parentezcos,
     required this.conceptos_catalogo,
     required this.documentos_catalogo,
     required this.listaLogiasPorUsuario,
+    required this.grados_catalogo,
+    required this.perfiles_catalogo,
+    required this.firmas_catalogo,
+    required this.logias_catalogo,
   });
 
   factory Catalogos.fromJson(Map<String, dynamic> json) => Catalogos(
@@ -357,6 +443,17 @@ class Catalogos {
         conceptos_catalogo: (json['conceptos_catalogo'] as List<dynamic>? ?? []).map((e) => ConceptoCatalogo.fromJson(e)).toList(),
         documentos_catalogo: (json['documentos_catalogo'] as List<dynamic>? ?? []).map((e) => DocumentosCatalogo.fromJson(e)).toList(),
         listaLogiasPorUsuario: (json['listaLogiasPorUsuario'] as List<dynamic>? ?? []).map((e) => ListaLogiasPorUsuario.fromJson(e)).toList(),
+        grados_catalogo: Map.from(json['grados_catalogo'] ?? {}).map(
+          (key, value) => MapEntry<String, List<GradoCatalogo>>(
+            key,
+            (value as List<dynamic>? ?? [])
+                .map((gradoJson) => GradoCatalogo.fromJson(gradoJson, grupo: key))
+                .toList(),
+          ),
+        ),
+        perfiles_catalogo: (json['perfiles_catalogo'] as List<dynamic>? ?? []).map((e) => PerfilCatalogo.fromJson(e)).toList(),
+        firmas_catalogo: (json['firmas_catalogo'] as List<dynamic>? ?? []).map((e) => Firma.fromJson(e)).toList(),
+        logias_catalogo: (json['logias_catalogo'] as List<dynamic>? ?? []).map((e) => LogiaCatalogo.fromJson(e)).toList(),
       );
 
   Map<String, dynamic> toJson() => {
@@ -364,6 +461,10 @@ class Catalogos {
         'conceptos_catalogo': conceptos_catalogo.map((e) => e.toJson()).toList(),
         'documentos_catalogo': documentos_catalogo.map((e) => e.toJson()).toList(),
         'listaLogiasPorUsuario': listaLogiasPorUsuario.map((e) => e.toJson()).toList(),
+        'grados_catalogo': Map.from(grados_catalogo).map((k, v) => MapEntry<String, dynamic>(k, v.map((e) => e.toJson()).toList())),
+        'perfiles_catalogo': perfiles_catalogo.map((e) => e.toJson()).toList(),
+        'firmas_catalogo': firmas_catalogo.map((e) => e.toJson()).toList(),
+        'n ': logias_catalogo.map((e) => e.toJson()).toList(),
       };
 }
 
@@ -526,18 +627,208 @@ class DocumentosCatalogoDetalle {
       };
 }
 
+// NUEVO: Modelo simple para los perfiles dentro de la lista de miembros.
+class MiembroPerfil {
+  int idLogia;
+  String Tratamiento;
+  int Grado;
+  int idPerfil; // NUEVO
+  String PerfilNombre; // NUEVO
+
+  MiembroPerfil({
+    required this.idLogia,
+    required this.Tratamiento,
+    required this.Grado,
+    required this.idPerfil,
+    required this.PerfilNombre,
+  });
+
+  factory MiembroPerfil.fromJson(Map<String, dynamic> json) => MiembroPerfil(
+        idLogia: json['idLogia'] ?? 0,
+        Tratamiento: json['Tratamiento'] ?? '',
+        Grado: json['Grado'] ?? 0,
+        idPerfil: json['idPerfil'] ?? 0,
+        PerfilNombre: json['PerfilNombre'] ?? '',
+      );
+
+  Map<String, dynamic> toJson() => {
+        'idLogia': idLogia,
+        'Tratamiento': Tratamiento,
+        'Grado': Grado,
+        'idPerfil': idPerfil,
+        'PerfilNombre': PerfilNombre,
+      };
+}
+
 class ListaLogiasPorUsuario {
   String Nombre;
   int idUsuario;
-  List<int> listaIddLogia;
+  String FechaNacimiento;
+  List<MiembroPerfil> perfiles;
 
-  ListaLogiasPorUsuario({required this.Nombre, required this.idUsuario, required this.listaIddLogia});
+  ListaLogiasPorUsuario({
+    required this.Nombre,
+    required this.idUsuario,
+    required this.FechaNacimiento,
+    required this.perfiles,
+  });
 
   factory ListaLogiasPorUsuario.fromJson(Map<String, dynamic> json) => ListaLogiasPorUsuario(
         Nombre: json['Nombre'] ?? '',
         idUsuario: json['idUsuario'] ?? 0,
-        listaIddLogia: (json['listaIddLogia'] as List<dynamic>? ?? []).map((e) => (e ?? 0) as int).toList(),
+        FechaNacimiento: json['FechaNacimiento'] ?? '',
+        perfiles: (json['perfiles'] as List<dynamic>? ?? []).map((e) => MiembroPerfil.fromJson(e)).toList(),
       );
 
-  Map<String, dynamic> toJson() => {'Nombre': Nombre, 'idUsuario': idUsuario, 'listaIddLogia': listaIddLogia};
+  Map<String, dynamic> toJson() => {
+    'Nombre': Nombre, 
+    'idUsuario': idUsuario, 
+    'FechaNacimiento': FechaNacimiento, 
+    'perfiles': perfiles.map((e) => e.toJson()).toList()
+  };
+}
+
+class GradoCatalogo {
+    String Grupo;
+    int idGrado;
+    String Descripcion;
+
+    GradoCatalogo({
+        required this.Grupo,
+        required this.idGrado,
+        required this.Descripcion,
+    });
+
+    // **CORRECCIÓN:** El grupo ahora se pasa como parámetro, no se lee del JSON.
+    factory GradoCatalogo.fromJson(Map<String, dynamic> json, {String grupo = ''}) => GradoCatalogo(
+        Grupo: grupo, // Asignamos el grupo que viene de la clave del mapa.
+        idGrado: json["idGrado"] ?? 0,
+        Descripcion: json["Descripcion"] ?? '',
+    );
+
+    Map<String, dynamic> toJson() => {"Grupo": Grupo, "idGrado": idGrado, "Descripcion": Descripcion};
+}
+
+class PerfilCatalogo {
+    String Nombre;
+    int idPerfil;
+    String Grupo;
+
+    PerfilCatalogo({
+        required this.Nombre,
+        required this.idPerfil,
+        required this.Grupo,
+    });
+
+    factory PerfilCatalogo.fromJson(Map<String, dynamic> json) => PerfilCatalogo(
+        Nombre: json["Nombre"] ?? '',
+        idPerfil: json["idPerfil"] ?? 0,
+        Grupo: json["Grupo"] ?? '',
+    );
+
+    Map<String, dynamic> toJson() => {
+        "Nombre": Nombre,
+        "idPerfil": idPerfil,
+        "Grupo": Grupo,
+    };
+}
+
+// NUEVO MODELO PARA FIRMAS
+class Firma {
+    int idFirma;
+    int idLogia;
+    String vm; // URL de la firma del Venerable Maestro
+    String sec; // URL de la firma del Secretario
+    bool activo;
+
+    Firma({
+        required this.idFirma,
+        required this.idLogia,
+        required this.vm,
+        required this.sec,
+        required this.activo,
+    });
+
+    factory Firma.fromJson(Map<String, dynamic> json) => Firma(
+        idFirma: json["idFirma"] ?? 0,
+        idLogia: json["idLogia"] ?? 0,
+        vm: json["vm"] ?? '',
+        sec: json["sec"] ?? '',
+        activo: json["activo"] ?? false,
+    );
+
+    Map<String, dynamic> toJson() => {"idFirma": idFirma, "idLogia": idLogia, "vm": vm, "sec": sec, "activo": activo};
+}
+
+// NUEVO MODELO PARA EL CATÁLOGO DE LOGIAS
+class LogiaCatalogo {
+    int idLogia;
+    String Nombre;
+    int idGranLogia;
+
+    LogiaCatalogo({
+        required this.idLogia, // Internamente usaremos idLogia
+        required this.Nombre,
+        required this.idGranLogia,
+    });
+
+    factory LogiaCatalogo.fromJson(Map<String, dynamic> json) => LogiaCatalogo(
+        idLogia: json["iddLogia"] ?? json["idLogia"] ?? 0, // Acepta 'iddLogia' del JSON y lo mapea a 'idLogia'
+        Nombre: json["Descripcion"] ?? json["Nombre"] ?? '', // Acepta 'Descripcion' del JSON y lo mapea a 'Nombre'
+        idGranLogia: json["idGranLogia"] ?? 0,
+    );
+
+    Map<String, dynamic> toJson() => {"iddLogia": idLogia, "Descripcion": Nombre, "idGranLogia": idGranLogia};
+}
+
+class RadioModel {
+  int id;
+  String title;
+  String description;
+  String content;
+  String createdAt;
+  String validUntil;
+  String targetAudience;
+  int issuingLogiaId;
+  String? documentUrl;
+  bool isActive;
+
+  RadioModel({
+    required this.id,
+    required this.title,
+    required this.description,
+    required this.content,
+    required this.createdAt,
+    required this.validUntil,
+    required this.targetAudience,
+    required this.issuingLogiaId,
+    this.documentUrl,
+    required this.isActive,
+  });
+
+  factory RadioModel.fromJson(Map<String, dynamic> json) => RadioModel(
+        id: json['id'] ?? 0,
+        title: json['title'] ?? '',
+        description: json['description'] ?? '',
+        content: json['content'] ?? '',
+        createdAt: json['created_at'] ?? '',
+        validUntil: json['valid_until'] ?? '',
+        targetAudience: json['target_audience'] ?? '',
+        issuingLogiaId: json['issuing_logia_id'] ?? 0,
+        documentUrl: json['document_url'],
+        isActive: json['is_active'] ?? false,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'title': title,
+        'description': description,
+        'content': content,
+        'created_at': createdAt,
+        'valid_until': validUntil,
+        'target_audience': targetAudience,
+        'issuing_logia_id': issuingLogiaId,
+        'document_url': documentUrl,
+        'is_active': isActive,
+      };
 }

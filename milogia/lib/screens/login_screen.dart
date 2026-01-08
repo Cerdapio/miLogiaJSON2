@@ -2,15 +2,18 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:milogia/screens/super_admin_screen.dart';
+import 'package:milogia/services/notification_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:local_auth/local_auth.dart';
+import 'package:local_auth_android/local_auth_android.dart'; // Importación clave para las opciones
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../models/user_model.dart';
 import '../config/auth_config.dart';
 import 'home_screen.dart';
 
-final SupabaseClient supabase = SupabaseClient(
-  supabaseUrl,
-  supabaseAnonKey,
-);
+// Usamos la instancia global inicializada en main.dart
+final SupabaseClient supabase = Supabase.instance.client;
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -20,6 +23,10 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  // **NUEVO: Instancia para autenticación local**
+  final LocalAuthentication _localAuth = LocalAuthentication();
+  final _storage = const FlutterSecureStorage();
+
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _userController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -48,6 +55,59 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  // **NUEVO: Función para autenticación biométrica**
+  Future<void> _authenticateWithBiometrics() async {
+    bool authenticated = false;
+    try {
+      // 1. Verificar si el dispositivo soporta biometría
+      final bool canCheckBiometrics = await _localAuth.canCheckBiometrics;
+      final bool isDeviceSupported = await _localAuth.isDeviceSupported();
+
+      if (!canCheckBiometrics || !isDeviceSupported) {
+        _showSnackbar('El dispositivo no soporta autenticación biométrica.', isError: true);
+        return;
+      }
+
+      // 2. Iniciar el diálogo de autenticación
+      authenticated = await _localAuth.authenticate(
+        localizedReason: 'Usa tu huella o rostro para ingresar',
+        options: const AuthenticationOptions(
+          stickyAuth: true, // Mantiene el diálogo hasta que se complete
+          biometricOnly: true, // Solo permite huella/rostro, no PIN del dispositivo
+        ),
+      );
+
+      if (authenticated) {
+        _showSnackbar('Autenticación exitosa. Cargando datos...');
+        // **NUEVO: Recuperar y usar credenciales guardadas**
+        final email = await _storage.read(key: 'email');
+        final password = await _storage.read(key: 'password');
+
+        if (email != null && password != null) {
+          // Rellenamos los controladores y llamamos a la función de login
+          _userController.text = email;
+          _passwordController.text = password;
+          await _login();
+        } else {
+          _showSnackbar('No se encontraron credenciales guardadas. Por favor, inicia sesión manualmente una vez.', isError: true);
+        }
+      }
+    } catch (e) {
+      _showSnackbar('Error de biometría: ${e.toString()}', isError: true);
+    }
+  }
+
+  // **NUEVO: Funciones para guardar y borrar credenciales**
+  Future<void> _saveCredentials(String email, String password) async {
+    await _storage.write(key: 'email', value: email);
+    await _storage.write(key: 'password', value: password);
+  }
+
+  Future<void> _deleteCredentials() async {
+    await _storage.delete(key: 'email');
+    await _storage.delete(key: 'password');
+  }
+
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -56,14 +116,18 @@ class _LoginScreenState extends State<LoginScreen> {
       _errorMessage = '';
     });
 
-    final username = _userController.text;
+    // **CAMBIO CRÍTICO DE SEGURIDAD**
+    // Usamos el email para el login de Supabase Auth, no el nombre de usuario.
+    // El campo de texto en la UI debería pedir el Correo Electrónico.
+    final email = _userController.text.trim();
     final password = _passwordController.text;
     String accessToken = '';
 
     try {
+      // Se usa el email y password introducidos por el usuario, no valores fijos.
       final AuthResponse authResponse = await supabase.auth.signInWithPassword(
-        email: "laportillo1987@gmail.com", 
-        password: "C3rd45-69*69",
+        email: email, 
+        password: password,
       );
       print(authResponse);
       if (authResponse.session == null) {
@@ -74,17 +138,10 @@ class _LoginScreenState extends State<LoginScreen> {
       final url = Uri.parse('$supabaseUrl/rest/v1/rpc/$rpcFunction');
 
       final payload = {
-        "popcion": 5,
-        "pidusuario": 1,
-        "piddlogia": 1,
-        "pnombre": "",
-        "pusuario": username,
-        "pcontrasena": password,
-        "ptelefono": "",
-        "pfechanacimiento": "",
-        "pdireccion": "",
-        "pcorreoelectronico": "",
-        "pfoto": ""
+        "popcion": 5
+        // CORRECCIÓN: Ya no se necesitan más parámetros.
+        // El SP ahora usa auth.uid() que se obtiene automáticamente
+        // del 'accessToken' que enviamos en las cabeceras.
       };
 
       final headers = {
@@ -108,15 +165,18 @@ class _LoginScreenState extends State<LoginScreen> {
             // Usamos el modelo RootModel generado
             final root = RootModel.fromJson(decodedResponse);
             _rootModel = root;
-            print(accessToken);
+
             final profiles = root.user.perfiles_opciones;
 
             if (profiles.length > 1) {
               if (mounted) _showProfileSelectionDialog(profiles);
             } else if (profiles.length == 1) {
-              _navigateToHome(profiles.first);
+              _navigateToHome(profiles.first, accessToken);
             } else {
+              // Si no hay perfiles, es un error de configuración, borramos credenciales para evitar bucles.
+              await _deleteCredentials();
               if (mounted) _showSnackbar('El usuario no tiene perfiles asignados, pero la sesión es válida.', isError: true);
+              print('$email, $password, ($payload)');
             }
             return;
           }
@@ -136,6 +196,8 @@ class _LoginScreenState extends State<LoginScreen> {
       String errorMessage = e.message.contains('Invalid login credentials') == true
           ? 'Usuario o contraseña incorrectos.'
           : 'Error de autenticación: ${e.message}';
+      // Si las credenciales son inválidas, las borramos del almacenamiento seguro
+      await _deleteCredentials();
       _showSnackbar(errorMessage, isError: true);
       print('Error de autenticación: ${e.message}');
     } catch (e) {
@@ -147,6 +209,10 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _showProfileSelectionDialog(List<PerfilOpcion> profiles) {
+    if (profiles.isEmpty) {
+      _showSnackbar('Inicio de sesión correcto, pero no tienes perfiles asignados.', isError: true);
+      return;
+    }
     _selectedProfile = profiles.first;
 
     showDialog(
@@ -163,16 +229,32 @@ class _LoginScreenState extends State<LoginScreen> {
                   const Text('Por favor, selecciona el grupo con el que deseas trabajar:'),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<PerfilOpcion>(
-                    value: _selectedProfile,
+                    isExpanded: true,
+                    // Asegurar que el valor seleccionado sea válido
+                    value: profiles.contains(_selectedProfile) ? _selectedProfile : (profiles.isNotEmpty ? profiles.first : null),
                     decoration: const InputDecoration(
                       labelText: 'Grupo / Logia',
                       border: OutlineInputBorder(),
                     ),
+                    selectedItemBuilder: (BuildContext context) {
+                      return profiles.map<Widget>((PerfilOpcion p) {
+                        return SizedBox(
+                          width: 200, // Forzar un ancho máximo para el texto seleccionado dentro del diálogo
+                          child: Text(
+                            '${p.LogiaNombre} (${p.PerfilNombre})',
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                        );
+                      }).toList();
+                    },
                     items: profiles.map((p) {
-                      // Ajustado a los nombres del modelo: Grupo y GradoNombre
                       return DropdownMenuItem<PerfilOpcion>(
                         value: p,
-                        child: Text('${p.Grupo} (${p.GradoNombre})'),
+                        child: Text(
+                          '${p.LogiaNombre} (${p.PerfilNombre})',
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       );
                     }).toList(),
                     onChanged: (PerfilOpcion? newValue) {
@@ -202,13 +284,30 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
     // Pasamos el RootModel al HomeScreen (ajusta HomeScreen si requiere otros datos)
-  void _navigateToHome(PerfilOpcion selectedProfile) {
+  void _navigateToHome(PerfilOpcion selectedProfile, [String? accessToken]) {
     if (_rootModel == null) return;
+  
+    // **NUEVO: Programamos las notificaciones aquí, donde ya sabemos la logia seleccionada.**
+    // Pasamos el RootModel completo y el ID de la logia para filtrar.
+    NotificationService().scheduleBirthdayNotifications(_rootModel!, selectedProfile.idLogia);
+    
+    // **NUEVO: Guardamos el token FCM para notificaciones push**
+    // **NUEVO: Guardamos el token FCM para notificaciones push (contexto Logia)**
+    // Pasamos el idLogia seleccionado
+    NotificationService().saveTokenToDatabase(selectedProfile.idLogia);
 
-    // Pasamos tanto RootModel como el perfil seleccionado al HomeScreen
+    // **NUEVO: Guardamos las credenciales para el próximo inicio de sesión biométrico**
+    _saveCredentials(_userController.text.trim(), _passwordController.text);
+  
+    // **MODIFICADO: Redirigir a la pantalla correcta según el perfil**
+    final Widget destinationScreen = selectedProfile.idPerfil == 0
+        ? SuperAdminScreen(root: _rootModel!, selectedProfile: selectedProfile)
+        : HomeScreen(root: _rootModel!, selectedProfile: selectedProfile);
+  
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(
-        builder: (context) => HomeScreen(root: _rootModel!, selectedProfile: selectedProfile),
+        //builder: (context) => HomeScreen(root: _rootModel!, selectedProfile: selectedProfile),
+        builder: (context) => destinationScreen,
       ),
       (Route<dynamic> route) => false,
     );
@@ -229,12 +328,19 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      //Icon(Icons.lock_open, size: 80, color: _secondaryColor),
-                      CircleAvatar(
-                        radius: 60, // Tamaño del círculo del logo
-                        backgroundColor: Colors.grey[200],
-                        backgroundImage: const AssetImage('images/logo.png'),
-                        child: Image.asset('images/logo.png'),
+                      Container( // Contenedor para definir el área circular
+                        width: 140, // Doble del radio deseado (60 * 2)
+                        height: 140, // Doble del radio deseado
+                        decoration: BoxDecoration(
+                          color: Colors.grey[200], // Color de fondo del círculo
+                          shape: BoxShape.circle,
+                        ),
+                        child: ClipOval( // Recorta el contenido a una forma ovalada (circular en este caso)
+                          child: Image.asset(
+                            'assets/images/logo.png',
+                            fit: BoxFit.contain, // Asegura que la imagen completa sea visible, sin recortar
+                          ),
+                        ),
                       ),
                      
                       const SizedBox(height: 10),
@@ -270,8 +376,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                 controller: _userController,
                                 keyboardType: TextInputType.emailAddress,
                                 decoration: InputDecoration(
-                                  labelText: 'Usuario',
-                                  //hintText: 'ej. nombre@dominio.com',
+                                  labelText: 'Correo Electrónico',
+                                  hintText: 'ej. nombre@dominio.com',
                                   prefixIcon: Icon(Icons.person, color: _secondaryColor),
                                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                                   filled: true,
@@ -279,9 +385,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                                 style: TextStyle(color: _formTextColor),
                                 validator: (value) {
-                                  //if (value == null || value.isEmpty || !value.contains('@')) {
-                                    //return 'Ingresa un correo electrónico válido';
-                                  //}
+                                  if (value == null || value.isEmpty || !value.contains('@')) {
+                                    return 'Ingresa un correo electrónico válido';
+                                  }
                                   return null;
                                 },
                               ),
@@ -354,6 +460,21 @@ class _LoginScreenState extends State<LoginScreen> {
                                           ),
                                         ),
                                 ),
+                              ),
+                              const SizedBox(height: 15),
+                              // **NUEVO: Botón para biometría**
+                              IconButton(
+                                onPressed: _authenticateWithBiometrics,
+                                icon: Icon(
+                                  Icons.fingerprint,
+                                  color: _secondaryColor,
+                                  size: 48,
+                                ),
+                                tooltip: 'Ingresar con huella digital',
+                              ),
+                              const Text(
+                                'Ingresar con huella',
+                                style: TextStyle(color: Colors.white70),
                               ),
                             ],
                           ),

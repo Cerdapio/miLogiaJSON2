@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "889586843338",
+    "project_id": "milogianotifications",
+    "storage_bucket": "milogianotifications.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:889586843338:android:4dafaed19cb0beb6a6fe33",
+        "android_client_info": {
+          "package_name": "com.example.milogia"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBHPnZ_k5NpPPN4Wn4gO5gBziIsx9RF08g"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

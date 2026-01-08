@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-//import 'package:http/http.dart' as http; // Se importa aunque no se use directamente aquí, es buena práctica
+import 'package:firebase_core/firebase_core.dart'; // Importar Firebase Core
+import 'package:milogia/services/notification_service.dart';
+import 'package:milogia/firebase_options.dart'; // Importar opciones generadas
 import 'screens/login_screen.dart'; // Importa la pantalla de Login
 import 'config/auth_config.dart'; // Importa las constantes de Supabase
 
@@ -13,21 +15,31 @@ Future<void> main() async {
   // de llamar a plugins o servicios externos.
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Inicialización de Supabase
-  // Usamos las constantes definidas en auth_config.dart
+  // 1. Inicialización de Supabase (DEBE SER LO PRIMERO si NotificationService lo usa)
   try {
     await Supabase.initialize(
       url: supabaseUrl,
       anonKey: supabaseAnonKey,
-      debug: true, // Habilitar logs de Supabase para depuración
+      debug: true, 
     );
+    debugPrint('Supabase inicializado correctamente');
   } catch (e) {
-    // Manejo de error si la inicialización falla (por ejemplo, claves inválidas)
-    // En un entorno real, puedes usar un logger o Crashlytics.
     debugPrint('Error al inicializar Supabase: $e');
-    // Si la inicialización falla, se puede optar por detener la aplicación
-    // o mostrar una pantalla de error.
   }
+
+  // 2. Inicialización de Firebase
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    debugPrint('Firebase inicializado correctamente');
+  } catch (e) {
+    debugPrint('Error al inicializar Firebase: $e');
+  }
+
+  // 3. Inicializa el servicio de notificaciones
+  // Ahora es seguro llamarlo porque Supabase ya está listo
+  await NotificationService().init();
 
   // Ahora puedes acceder a la instancia global de Supabase si la necesitas:
   // final supabaseClient = Supabase.instance.client;
