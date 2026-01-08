@@ -1,0 +1,1198 @@
+{
+  "user": {
+    "Foto": "https://ptylwwjhvoznaivzfpsa.supabase.co/storage/v1/object/sign/profilePictures/jsanchez.jpg?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9kNTJhZmUwYy0xNGNkLTQ5YjItYWYzMy0yYWU0YjA0NDAyYjAiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm9maWxlUGljdHVyZXMvanNhbmNoZXouanBnIiwiaWF0IjoxNzYzNTY2OTY5LCJleHAiOjE5MjEyNDY5Njl9.s5mcP3LsVXaDT1EbKjwvcoSpCACZgsukMtr9YjKDoaw",
+    "pagos": [
+      {
+        "Costo": 180,
+        "Fecha": "2025-10-17",
+        "Folio": "0",
+        "idPago": 1,
+        "Importe": 180,
+        "Cantidad": 1,
+        "iddLogia": 1,
+        "Descripcion": "Pago de cuota mensual",
+        "idFormaPago": 1
+      },
+      {
+        "Costo": 350,
+        "Fecha": "2025-10-17",
+        "Folio": "9507352445",
+        "idPago": 2,
+        "Importe": 1050,
+        "Cantidad": 3,
+        "iddLogia": 3,
+        "Descripcion": "Pago de cuota mensual",
+        "idFormaPago": 2
+      },
+      {
+        "Costo": 200,
+        "Fecha": "2025-11-21",
+        "Folio": "0",
+        "idPago": 23,
+        "Importe": 200,
+        "Cantidad": 1,
+        "iddLogia": 1,
+        "Descripcion": "Diploma",
+        "idFormaPago": 2
+      },
+      {
+        "Costo": 200,
+        "Fecha": "2025-11-21",
+        "Folio": "0",
+        "idPago": 24,
+        "Importe": 200,
+        "Cantidad": 1,
+        "iddLogia": 1,
+        "Descripcion": "Diploma",
+        "idFormaPago": 2
+      },
+      {
+        "Costo": 200,
+        "Fecha": "2025-11-21",
+        "Folio": "0",
+        "idPago": 25,
+        "Importe": 200,
+        "Cantidad": 1,
+        "iddLogia": 1,
+        "Descripcion": "Diploma",
+        "idFormaPago": 2
+      }
+    ],
+    "Nombre": "Luis Alfonso Portillo Torres",
+    "Usuario": "laportillo",
+    "Telefono": "614-510-0650",
+    "Direccion": "C.Periodista Ignacio Rodriguez # 96, Col. Revolución, Chihuahua, Chihuahua",
+    "auth_uuid": null,
+    "idUsuario": 1,
+    "documentos": [
+      {
+        "Fecha": "2023-11-11",
+        "iddLogia": 1,
+        "Descripcion": "Trabajo de albañileria",
+        "NombreCorto": "Tema 1",
+        "NombreLargo": "LA CÁMARA DE PREPARACIÓN, su simbolismo, su descripción y su interpretación"
+      },
+      {
+        "Fecha": "2025-11-20",
+        "iddLogia": 1,
+        "Descripcion": "Burilado",
+        "NombreCorto": "Tema 1",
+        "NombreLargo": "Resumen Simbólico del Primer Grado"
+      },
+      {
+        "Fecha": "2025-11-20",
+        "iddLogia": 1,
+        "Descripcion": "Trazado de arquitectura",
+        "NombreCorto": "Tema 1",
+        "NombreLargo": "Resumen simbólico de los 2 primeros grados, su interpretación"
+      },
+      {
+        "Fecha": "2025-11-20",
+        "iddLogia": 1,
+        "Descripcion": "Tema libre",
+        "NombreCorto": "Tema Libre",
+        "NombreLargo": ""
+      }
+    ],
+    "Contraseña": "Lapt123456",
+    "FechaNacimiento": "1987-09-17",
+    "CorreoElectronico": "laportillo1987@gmail.com",
+    "perfiles_opciones": [
+      {
+        "Grupo": "Grados Simbólicos",
+        "colores": {
+          "C1": "0047AB",
+          "C2": "000000",
+          "C3": "FFFFFF",
+          "C4": "FFD700"
+        },
+        "idGrado": 3,
+        "idLogia": 1,
+        "idPerfil": 1,
+        "permisos": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20
+        ],
+        "Abreviatura": "M∴M∴",
+        "GradoNombre": "Maestro",
+        "LogiaNombre": "Perseverancia y Lealtad No. 12",
+        "Significado": "Venerable Hermano",
+        "Tratamiento": "V∴H∴",
+        "PerfilNombre": "Venerable Maestro"
+      },
+      {
+        "Grupo": "Logias Capitulares de Perfección",
+        "colores": {
+          "C1": "000000",
+          "C2": "008000",
+          "C3": "FFFFFF",
+          "C4": "8B0000"
+        },
+        "idGrado": 4,
+        "idLogia": 3,
+        "idPerfil": 5,
+        "permisos": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          12,
+          17,
+          18,
+          19,
+          20
+        ],
+        "Abreviatura": "M∴S∴",
+        "GradoNombre": "Maestro Secreto",
+        "LogiaNombre": "Benito Juarez Garcia No. 221",
+        "Significado": "Digno Hermano",
+        "Tratamiento": "D∴H∴",
+        "PerfilNombre": "Secretario"
+      }
+    ],
+    "contactosEmergencia": [
+      {
+        "Nombre": "Luis Alfonso Portillo Romero",
+        "Telefono": "639-115-0771",
+        "Direccion": "C. 18 de Marzo 334, Col. Obrera, Delicias, Chihuahua",
+        "idUsuario": 1,
+        "Porcentaje": 0,
+        "Beneficiario": false,
+        "idEmergencia": 2,
+        "idParentezco": 2
+      },
+      {
+        "Nombre": "Carmen Dolores Torres Melendez",
+        "Telefono": "639-153-0026",
+        "Direccion": "C. 18 de Marzo # 334, Col. Obrera, Delicias, Chihuahua",
+        "idUsuario": 1,
+        "Porcentaje": 0,
+        "Beneficiario": false,
+        "idEmergencia": 3,
+        "idParentezco": 2
+      },
+      {
+        "Nombre": "Juana Marisol Aguilar Mejia",
+        "Telefono": "614-397-0871",
+        "Direccion": "C. Periodista Ignacio Rodriguez 96, Col. Revolución",
+        "idUsuario": 1,
+        "Porcentaje": 50,
+        "Beneficiario": true,
+        "idEmergencia": 1,
+        "idParentezco": 1
+      },
+      {
+        "Nombre": "Santiago André Portillo Aguilar",
+        "Telefono": "614-397-0871",
+        "Direccion": "Periodista Ignacio Rodríguez 96, Col. Revolución, Chihuahua, Chihuahua.",
+        "idUsuario": 1,
+        "Porcentaje": 25,
+        "Beneficiario": true,
+        "idEmergencia": 24,
+        "idParentezco": 3
+      },
+      {
+        "Nombre": "Luciana Sugey Portillo Aguilar",
+        "Telefono": "614-397-0871",
+        "Direccion": "Periodista Ignacio Rodríguez 96, Col. Revolución, Chihuahua, Chihuahua.",
+        "idUsuario": 1,
+        "Porcentaje": 25,
+        "Beneficiario": true,
+        "idEmergencia": 23,
+        "idParentezco": 3
+      }
+    ]
+  },
+  "status": "success",
+  "message": "Contexto de logia, perfil, documentos, pagos y catálogos cargado exitosamente",
+  "catalogos": {
+    "parentezcos": [
+      {
+        "Descripcion": "Esposa/Esposo",
+        "idParentezco": 1
+      },
+      {
+        "Descripcion": "Madre/Padre",
+        "idParentezco": 2
+      },
+      {
+        "Descripcion": "Hijo/Hija",
+        "idParentezco": 3
+      },
+      {
+        "Descripcion": "Amiga/Amigo",
+        "idParentezco": 4
+      },
+      {
+        "Descripcion": "Hermano/Hermana",
+        "idParentezco": 5
+      },
+      {
+        "Descripcion": "Tio/Tia",
+        "idParentezco": 6
+      }
+    ],
+    "conceptos_catalogo": [
+      {
+        "detalles": [
+          {
+            "Costo": 180,
+            "idGrado": 3,
+            "ctaBanco": "4217470190533790",
+            "iddLogia": 1,
+            "iddConcepto": 1
+          },
+          {
+            "Costo": 350,
+            "idGrado": 0,
+            "ctaBanco": "638180000116999371",
+            "iddLogia": 3,
+            "iddConcepto": 2
+          }
+        ],
+        "idConcepto": 1,
+        "Descripcion": "Pago de cuota mensual",
+        "RequierePago": true,
+        "RequiereGrado": true
+      },
+      {
+        "detalles": [
+          {
+            "Costo": 50,
+            "idGrado": 2,
+            "ctaBanco": "4217470190533790",
+            "iddLogia": 1,
+            "iddConcepto": 4
+          },
+          {
+            "Costo": 50,
+            "idGrado": 1,
+            "ctaBanco": "4217470190533790",
+            "iddLogia": 1,
+            "iddConcepto": 3
+          },
+          {
+            "Costo": 50,
+            "idGrado": 3,
+            "ctaBanco": "4217470190533790",
+            "iddLogia": 1,
+            "iddConcepto": 5
+          },
+          {
+            "Costo": 50,
+            "idGrado": 4,
+            "ctaBanco": "638180000116999371",
+            "iddLogia": 3,
+            "iddConcepto": 6
+          },
+          {
+            "Costo": 50,
+            "idGrado": 5,
+            "ctaBanco": "638180000116999371",
+            "iddLogia": 3,
+            "iddConcepto": 7
+          },
+          {
+            "Costo": 50,
+            "idGrado": 6,
+            "ctaBanco": "638180000116999371",
+            "iddLogia": 3,
+            "iddConcepto": 8
+          },
+          {
+            "Costo": 50,
+            "idGrado": 7,
+            "ctaBanco": "638180000116999371",
+            "iddLogia": 3,
+            "iddConcepto": 9
+          },
+          {
+            "Costo": 50,
+            "idGrado": 8,
+            "ctaBanco": "638180000116999371",
+            "iddLogia": 3,
+            "iddConcepto": 10
+          },
+          {
+            "Costo": 50,
+            "idGrado": 9,
+            "ctaBanco": "638180000116999371",
+            "iddLogia": 3,
+            "iddConcepto": 11
+          },
+          {
+            "Costo": 50,
+            "idGrado": 10,
+            "ctaBanco": "638180000116999371",
+            "iddLogia": 3,
+            "iddConcepto": 12
+          },
+          {
+            "Costo": 50,
+            "idGrado": 11,
+            "ctaBanco": "638180000116999371",
+            "iddLogia": 3,
+            "iddConcepto": 13
+          },
+          {
+            "Costo": 50,
+            "idGrado": 12,
+            "ctaBanco": "638180000116999371",
+            "iddLogia": 3,
+            "iddConcepto": 14
+          },
+          {
+            "Costo": 50,
+            "idGrado": 13,
+            "ctaBanco": "638180000116999371",
+            "iddLogia": 3,
+            "iddConcepto": 15
+          },
+          {
+            "Costo": 50,
+            "idGrado": 14,
+            "ctaBanco": "638180000116999371",
+            "iddLogia": 3,
+            "iddConcepto": 16
+          }
+        ],
+        "idConcepto": 2,
+        "Descripcion": "Liturgia",
+        "RequierePago": true,
+        "RequiereGrado": true
+      },
+      {
+        "detalles": [
+          {
+            "Costo": 1800,
+            "idGrado": 1,
+            "ctaBanco": "4217470190533790",
+            "iddLogia": 1,
+            "iddConcepto": 17
+          }
+        ],
+        "idConcepto": 3,
+        "Descripcion": "Iniciación",
+        "RequierePago": true,
+        "RequiereGrado": true
+      },
+      {
+        "detalles": [
+          {
+            "Costo": 1000,
+            "idGrado": 2,
+            "ctaBanco": "4217470190533790",
+            "iddLogia": 1,
+            "iddConcepto": 18
+          }
+        ],
+        "idConcepto": 4,
+        "Descripcion": "Aumento de salario",
+        "RequierePago": true,
+        "RequiereGrado": true
+      },
+      {
+        "detalles": [
+          {
+            "Costo": 1000,
+            "idGrado": 3,
+            "ctaBanco": "4217470190533790",
+            "iddLogia": 1,
+            "iddConcepto": 19
+          }
+        ],
+        "idConcepto": 5,
+        "Descripcion": "Exaltación",
+        "RequierePago": true,
+        "RequiereGrado": true
+      },
+      {
+        "detalles": [
+          {
+            "Costo": 1000,
+            "idGrado": 0,
+            "ctaBanco": "4217470190533790",
+            "iddLogia": 1,
+            "iddConcepto": 20
+          }
+        ],
+        "idConcepto": 6,
+        "Descripcion": "Afiliación/Regularización",
+        "RequierePago": true,
+        "RequiereGrado": false
+      },
+      {
+        "detalles": [
+          {
+            "Costo": 200,
+            "idGrado": 1,
+            "ctaBanco": "4217470190533790",
+            "iddLogia": 1,
+            "iddConcepto": 21
+          },
+          {
+            "Costo": 200,
+            "idGrado": 2,
+            "ctaBanco": "4217470190533790",
+            "iddLogia": 1,
+            "iddConcepto": 22
+          },
+          {
+            "Costo": 200,
+            "idGrado": 3,
+            "ctaBanco": "4217470190533790",
+            "iddLogia": 1,
+            "iddConcepto": 23
+          }
+        ],
+        "idConcepto": 7,
+        "Descripcion": "Diploma",
+        "RequierePago": true,
+        "RequiereGrado": true
+      }
+    ],
+    "documentos_catalogo": [
+      {
+        "Registro": true,
+        "detalles": [
+          {
+            "Grado": 1,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 1",
+            "NombreLargo": "LA CÁMARA DE PREPARACIÓN, su simbolismo, su descripción y su interpretación"
+          },
+          {
+            "Grado": 1,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 2",
+            "NombreLargo": "EL TRIANGULAR, su simbolismo y su interpretación"
+          },
+          {
+            "Grado": 1,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 3",
+            "NombreLargo": "EL TEMPLO, su descripción, sus dimensiones, etimología de la palabra Logia"
+          },
+          {
+            "Grado": 1,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 4",
+            "NombreLargo": "LA COLUMNA \"B\", su significado y su interpretación"
+          },
+          {
+            "Grado": 1,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 5",
+            "NombreLargo": "LAS DOCE COLUMNAS, su significado y su interpretación"
+          },
+          {
+            "Grado": 1,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 6",
+            "NombreLargo": "EL ARA, su descripción y su interpretación"
+          },
+          {
+            "Grado": 1,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 7",
+            "NombreLargo": "LA EDUCACIÓN MASÓNICA, los emblemas, las alegorías, los símbolos"
+          },
+          {
+            "Grado": 1,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 8",
+            "NombreLargo": "LA ESCUADRA, su simbolismo y su interpretación"
+          },
+          {
+            "Grado": 1,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 9",
+            "NombreLargo": "EL COMPÁS, su simbolismo y su interpretación"
+          },
+          {
+            "Grado": 1,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 10",
+            "NombreLargo": "LAS LUCES, su simbolismo y su interpretación"
+          },
+          {
+            "Grado": 1,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 11",
+            "NombreLargo": "LOS TRONOS, lugares de los Dignatarios en Logia, su descripción y su interpretación"
+          },
+          {
+            "Grado": 1,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 12",
+            "NombreLargo": "LAS HERRAMIENTAS DEL APRENDIZ, sus usos, su significado y su simbolismo"
+          },
+          {
+            "Grado": 1,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 13",
+            "NombreLargo": "EL MANDIL, su uso, su interpretación y su simbolismo"
+          },
+          {
+            "Grado": 1,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 14",
+            "NombreLargo": "EL JURAMENTO, su simbolismo y su interpretación"
+          },
+          {
+            "Grado": 1,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 15",
+            "NombreLargo": "LOS SALUDOS, LOS TOCAMIENTOS Y LAS BATERÍAS, su simbolismo y su interpretación"
+          },
+          {
+            "Grado": 1,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 16",
+            "NombreLargo": "LOS VIAJES DEL APRENDIZ, su significado, su simbolismo y su interpretación"
+          },
+          {
+            "Grado": 1,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 17",
+            "NombreLargo": "LA PALABRA SAGRADA DEL APRENDIZ, su significado, su simbolismo y su interpretación"
+          },
+          {
+            "Grado": 1,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 18",
+            "NombreLargo": "LA MARCHA DEL APRENDIZ, su significado y su interpretación"
+          },
+          {
+            "Grado": 1,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 19",
+            "NombreLargo": "LA EDAD DEL APRENDIZ, su significado y su interpretación"
+          },
+          {
+            "Grado": 1,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 20",
+            "NombreLargo": "LOS TOQUES, su significado, su simbolismo y su interpretación"
+          },
+          {
+            "Grado": 1,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 21",
+            "NombreLargo": "EL MASON ANTE LA DIVINIDAD"
+          },
+          {
+            "Grado": 1,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 22",
+            "NombreLargo": "EL MASON ANTE LA SOCIEDAD"
+          },
+          {
+            "Grado": 1,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 23",
+            "NombreLargo": "EL MASON ANTE SÍ MISMO"
+          },
+          {
+            "Grado": 1,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 24",
+            "NombreLargo": "QUE ES LA MASONERIA, sus principios y sus fines"
+          },
+          {
+            "Grado": 1,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 25",
+            "NombreLargo": "QUE ES EL MASON"
+          },
+          {
+            "Grado": 1,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 26",
+            "NombreLargo": "CONCEPTOS DEL VICIO"
+          },
+          {
+            "Grado": 1,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 27",
+            "NombreLargo": "CONCEPTOS DE LA VIRTUD"
+          },
+          {
+            "Grado": 1,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 28",
+            "NombreLargo": "CONCEPTOS DE LA MORAL"
+          },
+          {
+            "Grado": 1,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 29",
+            "NombreLargo": "EL NUMERO TRES, su significado en las ciencias, en la Naturaleza, en las Religiones y en la masoneria"
+          },
+          {
+            "Grado": 1,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 30",
+            "NombreLargo": "LOS TEMPLOS INICIÁTICOS DE LA ANTIGÜEDAD, y las actuales pruebas para la iniciación"
+          },
+          {
+            "Grado": 1,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 31",
+            "NombreLargo": "LOS TRES PUNTOS, su significado, su simbolismo y su interpretación"
+          },
+          {
+            "Grado": 1,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 32",
+            "NombreLargo": "OBJETO DEL GRADO DE APRENDIZ, su significado, su simbolismo, y su interpretación"
+          },
+          {
+            "Grado": 1,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 33",
+            "NombreLargo": "LA BIBLIA, su historia, la razón de su uso en Logia"
+          }
+        ],
+        "Solicitud": false,
+        "Descripcion": "Trabajo de albañileria",
+        "Elavoracion": false,
+        "idDocumento": 1,
+        "RequierePago": false,
+        "RequiereGrado": true,
+        "RequiereDescripcion": false
+      },
+      {
+        "Registro": true,
+        "detalles": [
+          {
+            "Grado": 2,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 1",
+            "NombreLargo": "Resumen Simbólico del Primer Grado"
+          },
+          {
+            "Grado": 2,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 2",
+            "NombreLargo": "Los Viajes, su simbolismo, sus diversas interpretaciones"
+          },
+          {
+            "Grado": 2,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 3",
+            "NombreLargo": "La palabra de pase, su origen e interpretación"
+          },
+          {
+            "Grado": 2,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 4",
+            "NombreLargo": "La palabra sagrada, su origen e interpretación"
+          },
+          {
+            "Grado": 2,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 5",
+            "NombreLargo": "Los escalones, su significado, colores e interpretación"
+          },
+          {
+            "Grado": 2,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 6",
+            "NombreLargo": "La Columna “J”, su significado e interpretación"
+          },
+          {
+            "Grado": 2,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 7",
+            "NombreLargo": "Los 5 sentidos, sus órganos y descripción"
+          },
+          {
+            "Grado": 2,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 8",
+            "NombreLargo": "Ordenes de la Arquitectura, origen e interpretación"
+          },
+          {
+            "Grado": 2,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 9",
+            "NombreLargo": "El Masón ante la Ciencia"
+          },
+          {
+            "Grado": 2,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 10",
+            "NombreLargo": "El Mandil, su significado e interpretación"
+          },
+          {
+            "Grado": 2,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 11",
+            "NombreLargo": "La Letra “G”, su origen e interpretación"
+          },
+          {
+            "Grado": 2,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 12",
+            "NombreLargo": "Las Ciencias del Compañero, definición"
+          },
+          {
+            "Grado": 2,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 13",
+            "NombreLargo": "Resumen Filosófico del Grado"
+          },
+          {
+            "Grado": 2,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 14",
+            "NombreLargo": "La Biblia, Historia, lugar en que se abre y porqué"
+          },
+          {
+            "Grado": 2,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 15",
+            "NombreLargo": "Resumen histórico del grado, origen y significado"
+          },
+          {
+            "Grado": 2,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 16",
+            "NombreLargo": "Las iniciaciones en los templos antiguos"
+          },
+          {
+            "Grado": 2,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 17",
+            "NombreLargo": "El número 5, su interpretación simbólica"
+          },
+          {
+            "Grado": 2,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 18",
+            "NombreLargo": "La estrella de 5 puntas, origen y significado"
+          },
+          {
+            "Grado": 2,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 19",
+            "NombreLargo": "La piedra cúbica de punta, descripción, interpretac"
+          },
+          {
+            "Grado": 2,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 20",
+            "NombreLargo": "Objeto del grado de Compañero"
+          },
+          {
+            "Grado": 2,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 21",
+            "NombreLargo": "Ciencia y Virtud"
+          }
+        ],
+        "Solicitud": false,
+        "Descripcion": "Burilado",
+        "Elavoracion": false,
+        "idDocumento": 2,
+        "RequierePago": false,
+        "RequiereGrado": true,
+        "RequiereDescripcion": false
+      },
+      {
+        "Registro": true,
+        "detalles": [
+          {
+            "Grado": 2,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 1",
+            "NombreLargo": "Resumen simbólico de los 2 primeros grados, su interpretación"
+          },
+          {
+            "Grado": 2,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 2",
+            "NombreLargo": "La palabra de pase, su origen y su interpretación"
+          },
+          {
+            "Grado": 2,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 3",
+            "NombreLargo": "La Palabra Sagrada, su origen e interpretación"
+          },
+          {
+            "Grado": 2,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 4",
+            "NombreLargo": "La Acacia, su origen, su historia y su interpretación"
+          },
+          {
+            "Grado": 2,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 5",
+            "NombreLargo": "Las ciencias del Grado de Maestro"
+          },
+          {
+            "Grado": 2,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 6",
+            "NombreLargo": "Resumen Filosófico del Grado"
+          },
+          {
+            "Grado": 3,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 7",
+            "NombreLargo": "Resumen Histórico del Grado"
+          },
+          {
+            "Grado": 3,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 8",
+            "NombreLargo": "Resumen Astronómico del Grado"
+          },
+          {
+            "Grado": 3,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 9",
+            "NombreLargo": "Los Landmarks, consideraciones generales"
+          },
+          {
+            "Grado": 3,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 10",
+            "NombreLargo": "El triángulo, su definición y su interpretación esotérica"
+          },
+          {
+            "Grado": 3,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 11",
+            "NombreLargo": "Objeto del grado de Maestro y su interpretación"
+          },
+          {
+            "Grado": 3,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 12",
+            "NombreLargo": "Significado astronómico de la regla, la escuadra y el mazo como instrumentos de muerte"
+          },
+          {
+            "Grado": 3,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 13",
+            "NombreLargo": "Significado esotérico del mandil cuadrado con babeta triangular"
+          },
+          {
+            "Grado": 3,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 14",
+            "NombreLargo": "Síntesis de la Leyenda del Tercer Grado"
+          },
+          {
+            "Grado": 3,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 15",
+            "NombreLargo": "En qué página se abre la Biblia y porqué"
+          },
+          {
+            "Grado": 3,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 16",
+            "NombreLargo": "Origen e Interpretación Esotérica del Tau"
+          },
+          {
+            "Grado": 3,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 17",
+            "NombreLargo": "Etimología y significado de la palabra Hiram"
+          },
+          {
+            "Grado": 3,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 18",
+            "NombreLargo": "Lugar en donde debe encontrarse a un Maestro perdido y porqué"
+          },
+          {
+            "Grado": 3,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 19",
+            "NombreLargo": "Interpretación astronómica de la leyenda del grado"
+          },
+          {
+            "Grado": 3,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 20",
+            "NombreLargo": "La leyenda del grado y su interpretación filosófica"
+          },
+          {
+            "Grado": 3,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 21",
+            "NombreLargo": "La leyenda del grado y su interpretación moral"
+          },
+          {
+            "Grado": 3,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 22",
+            "NombreLargo": "La leyenda del grado y su interpretación genésica"
+          },
+          {
+            "Grado": 3,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 23",
+            "NombreLargo": "La leyenda del grado y su interpretación teosófica"
+          },
+          {
+            "Grado": 3,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 24",
+            "NombreLargo": "El número Siete, su origen y su interpretación"
+          },
+          {
+            "Grado": 3,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 25",
+            "NombreLargo": "La historia de la Masonería"
+          },
+          {
+            "Grado": 3,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 26",
+            "NombreLargo": "Los cinco puntos de perfección y su significado"
+          },
+          {
+            "Grado": 3,
+            "idConcepto": 0,
+            "NombreCorto": "Tema 27",
+            "NombreLargo": "Interpretación y origen del signo de la garra"
+          }
+        ],
+        "Solicitud": false,
+        "Descripcion": "Trazado de arquitectura",
+        "Elavoracion": false,
+        "idDocumento": 3,
+        "RequierePago": false,
+        "RequiereGrado": true,
+        "RequiereDescripcion": false
+      },
+      {
+        "Registro": true,
+        "detalles": [
+          {
+            "Grado": 0,
+            "idConcepto": 0,
+            "NombreCorto": "Radio",
+            "NombreLargo": ""
+          }
+        ],
+        "Solicitud": true,
+        "Descripcion": "Radio",
+        "Elavoracion": true,
+        "idDocumento": 4,
+        "RequierePago": false,
+        "RequiereGrado": false,
+        "RequiereDescripcion": true
+      },
+      {
+        "Registro": true,
+        "detalles": [
+          {
+            "Grado": 0,
+            "idConcepto": 0,
+            "NombreCorto": "Plancha",
+            "NombreLargo": ""
+          }
+        ],
+        "Solicitud": true,
+        "Descripcion": "Plancha",
+        "Elavoracion": true,
+        "idDocumento": 5,
+        "RequierePago": false,
+        "RequiereGrado": false,
+        "RequiereDescripcion": true
+      },
+      {
+        "Registro": true,
+        "detalles": [
+          {
+            "Grado": 0,
+            "idConcepto": 0,
+            "NombreCorto": "Tema Libre",
+            "NombreLargo": ""
+          }
+        ],
+        "Solicitud": false,
+        "Descripcion": "Tema libre",
+        "Elavoracion": false,
+        "idDocumento": 6,
+        "RequierePago": false,
+        "RequiereGrado": false,
+        "RequiereDescripcion": true
+      },
+      {
+        "Registro": true,
+        "detalles": [],
+        "Solicitud": false,
+        "Descripcion": "Trabajo de perfección",
+        "Elavoracion": false,
+        "idDocumento": 7,
+        "RequierePago": false,
+        "RequiereGrado": true,
+        "RequiereDescripcion": true
+      },
+      {
+        "Registro": false,
+        "detalles": [
+          {
+            "Grado": 1,
+            "idConcepto": 7,
+            "NombreCorto": "Diploma de aprendiz",
+            "NombreLargo": "Diploma del primer grado "
+          }
+        ],
+        "Solicitud": true,
+        "Descripcion": "Diploma",
+        "Elavoracion": true,
+        "idDocumento": 8,
+        "RequierePago": true,
+        "RequiereGrado": true,
+        "RequiereDescripcion": false
+      }
+    ],
+    "listaLogiasPorUsuario": [
+      {
+        "Nombre": "Luis Alfonso Portillo Torres",
+        "idUsuario": 1,
+        "listaIddLogia": [
+          1,
+          3
+        ]
+      },
+      {
+        "Nombre": "Arturo Leon Portillo",
+        "idUsuario": 2,
+        "listaIddLogia": [
+          1
+        ]
+      },
+      {
+        "Nombre": "Juan Antonio Martinez Robles",
+        "idUsuario": 3,
+        "listaIddLogia": [
+          1
+        ]
+      },
+      {
+        "Nombre": "Juan Carlos Erives Fuentes",
+        "idUsuario": 4,
+        "listaIddLogia": [
+          1,
+          3
+        ]
+      },
+      {
+        "Nombre": "Jahaziel Guillen Sanchez Martinez",
+        "idUsuario": 5,
+        "listaIddLogia": [
+          1,
+          3
+        ]
+      },
+      {
+        "Nombre": "Xamir Jaydar Soto",
+        "idUsuario": 6,
+        "listaIddLogia": []
+      },
+      {
+        "Nombre": "Manuel Blanco Erives",
+        "idUsuario": 7,
+        "listaIddLogia": []
+      },
+      {
+        "Nombre": "Bogar Isaac Gonzalez Esparza",
+        "idUsuario": 8,
+        "listaIddLogia": []
+      },
+      {
+        "Nombre": "Librado Gilberto Martinez Bibiano",
+        "idUsuario": 9,
+        "listaIddLogia": []
+      },
+      {
+        "Nombre": "Fermin Gomez Ochoa",
+        "idUsuario": 10,
+        "listaIddLogia": []
+      },
+      {
+        "Nombre": "Oscar Mauricio Jaquez Nieto",
+        "idUsuario": 11,
+        "listaIddLogia": []
+      },
+      {
+        "Nombre": "Javier Medina Gonzalez ",
+        "idUsuario": 12,
+        "listaIddLogia": []
+      },
+      {
+        "Nombre": "Jesus Alberto Menchaca Fuentes",
+        "idUsuario": 13,
+        "listaIddLogia": []
+      },
+      {
+        "Nombre": "David Mireles Valadez",
+        "idUsuario": 14,
+        "listaIddLogia": []
+      },
+      {
+        "Nombre": "Jorge Alberto Chavez de la Riva",
+        "idUsuario": 15,
+        "listaIddLogia": []
+      },
+      {
+        "Nombre": "Jorge Arturo Lara Perez",
+        "idUsuario": 16,
+        "listaIddLogia": []
+      },
+      {
+        "Nombre": "Felipe de Jesus Medina Granados",
+        "idUsuario": 17,
+        "listaIddLogia": []
+      },
+      {
+        "Nombre": "Julio Cesar Martinez Molina",
+        "idUsuario": 18,
+        "listaIddLogia": []
+      },
+      {
+        "Nombre": "Mauricio Quintero Robles",
+        "idUsuario": 19,
+        "listaIddLogia": [
+          1,
+          3,
+          4
+        ]
+      }
+    ]
+  }
+}
