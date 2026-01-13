@@ -11,6 +11,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../models/user_model.dart';
 import '../config/auth_config.dart';
 import 'home_screen.dart';
+import 'package:geolocator/geolocator.dart';
 
 // Usamos la instancia global inicializada en main.dart
 final SupabaseClient supabase = Supabase.instance.client;
@@ -137,11 +138,29 @@ class _LoginScreenState extends State<LoginScreen> {
       print(accessToken);
       final url = Uri.parse('$supabaseUrl/rest/v1/rpc/$rpcFunction');
 
+      // **NUEVO: Obtener ubicación antes de llamar a sp_catcusuarios_v2**
+      double? lat, lng;
+      try {
+        LocationPermission permission = await Geolocator.checkPermission();
+        if (permission == LocationPermission.denied) {
+          permission = await Geolocator.requestPermission();
+        }
+        if (permission == LocationPermission.always || permission == LocationPermission.whileInUse) {
+          Position pos = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.low);
+          lat = pos.latitude;
+          lng = pos.longitude;
+        }
+      } catch (_) {
+        // Ignorar errores de GPS en login para no bloquear el acceso
+      }
+
       final payload = {
-        "popcion": 5
-        // CORRECCIÓN: Ya no se necesitan más parámetros.
-        // El SP ahora usa auth.uid() que se obtiene automáticamente
-        // del 'accessToken' que enviamos en las cabeceras.
+        "popcion": 5,
+        "pusuario": email,
+        "pcontrasena": password,
+        'pfechanacimiento': '1900-01-01',
+        "plat": lat,
+        "plng": lng,
       };
 
       final headers = {
@@ -153,17 +172,32 @@ class _LoginScreenState extends State<LoginScreen> {
       final resp = await http.post(url, headers: headers, body: json.encode(payload));
       print(resp.body);
       if (resp.statusCode == 200) {
-        final dynamic decodedResponse = json.decode(resp.body);
+        final dynamic rawDecodedResponse = json.decode(resp.body);
+        Map<String, dynamic>? processedDecodedResponse;
+        
+        if (rawDecodedResponse is List && rawDecodedResponse.isNotEmpty) {
+          // Si obtenemos una lista (ej. de un SELECT), buscamos el primer elemento
+          final first = rawDecodedResponse[0];
+          if (first is Map<String, dynamic>) {
+            // Si está envuelto en una llave con nombre del SP (común en PostgREST crudo)
+            if (first.containsKey('sp_catcusuarios_v2')) {
+              processedDecodedResponse = first['sp_catcusuarios_v2'] as Map<String, dynamic>;
+            } else {
+              processedDecodedResponse = first;
+            }
+          }
+        } else if (rawDecodedResponse is Map<String, dynamic>) {
+          processedDecodedResponse = rawDecodedResponse;
+        }
 
-        if (decodedResponse is Map<String, dynamic>) {
-          if (decodedResponse['status'] == 'error') {
-            _showSnackbar(decodedResponse['message'] as String, isError: true);
+        if (processedDecodedResponse != null) {
+          if (processedDecodedResponse['status'] == 'error') {
+            _showSnackbar(processedDecodedResponse['message'] as String, isError: true);
             return;
           }
-          print(decodedResponse);
-          if (decodedResponse.containsKey('user')) {
+          if (processedDecodedResponse.containsKey('user')) {
             // Usamos el modelo RootModel generado
-            final root = RootModel.fromJson(decodedResponse);
+            final root = RootModel.fromJson(processedDecodedResponse);
             _rootModel = root;
 
             final profiles = root.user.perfiles_opciones;
@@ -173,10 +207,12 @@ class _LoginScreenState extends State<LoginScreen> {
             } else if (profiles.length == 1) {
               _navigateToHome(profiles.first, accessToken);
             } else {
-              // Si no hay perfiles, es un error de configuración, borramos credenciales para evitar bucles.
+              // Si no hay perfiles, es un error de configuración
               await _deleteCredentials();
               if (mounted) _showSnackbar('El usuario no tiene perfiles asignados, pero la sesión es válida.', isError: true);
-              print('$email, $password, ($payload)');
+              print('Email: $email, Password: $password, Payload: $payload');
+              print('Response Body: ${resp.body}');
+              print('Profiles List: $profiles');
             }
             return;
           }
@@ -191,6 +227,7 @@ class _LoginScreenState extends State<LoginScreen> {
         final errorBody = json.decode(resp.body);
         final errorMessage = errorBody['message'] ?? 'Error desconocido';
         _showSnackbar('Error al obtener datos adicionales (Código: ${resp.statusCode}, Mensaje: $errorMessage)', isError: true);
+        
       }
     } on AuthException catch (e) {
       String errorMessage = e.message.contains('Invalid login credentials') == true

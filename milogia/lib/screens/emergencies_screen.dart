@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:intl/intl.dart';
 import 'dart:async';
-//import 'dart:io';
+import 'dart:io';
+import 'package:flutter/services.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 
 
 import '../models/user_model.dart';
@@ -25,12 +29,47 @@ class EmergenciesScreen extends StatefulWidget {
 
 class _EmergenciesScreenState extends State<EmergenciesScreen> {
   late Future<List<EmergencyModel>> _emergenciesFuture;
+  bool _isXiaomi = false;
+  bool _miuiPermissionsGranted = false;
 
   @override
   void initState() {
     super.initState();
     _emergenciesFuture = _fetchEmergencies();
+    _checkDeviceType();
   }
+
+  Future<void> _checkDeviceType() async {
+    if (Platform.isAndroid) {
+      try {
+        final deviceInfo = DeviceInfoPlugin();
+        final androidInfo = await deviceInfo.androidInfo;
+        final manufacturer = androidInfo.manufacturer.toLowerCase();
+        if (manufacturer.contains('xiaomi') || 
+            manufacturer.contains('redmi') || 
+            manufacturer.contains('poco')) {
+          if (mounted) setState(() => _isXiaomi = true);
+          
+          // Verificar si ya tiene los permisos activados
+          const channel = MethodChannel('com.milogia.app/settings');
+          final granted = await channel.invokeMethod<bool>('checkMiuiPermissions');
+          if (mounted) setState(() => _miuiPermissionsGranted = granted ?? false);
+        }
+      } catch (e) {
+        debugPrint('Error detectando dispositivo: $e');
+      }
+    }
+  }
+
+  Future<void> _openXiaomiSettings() async {
+    try {
+      const channel = MethodChannel('com.milogia.app/settings');
+      await channel.invokeMethod('openMiuiPermissionSettings');
+    } on PlatformException catch (e) {
+      debugPrint('Error abriendo ajustes: ${e.message}');
+    }
+  }
+
   // -----------------------
   // Helpers
   // -----------------------
@@ -136,6 +175,126 @@ class _EmergenciesScreenState extends State<EmergenciesScreen> {
       _emergenciesFuture = _fetchEmergencies();
     });
   }
+
+  // --- LÓGICA DE PANICO Y AUXILIO ---
+
+  Future<void> _triggerAlert(String type, {String? details}) async {
+    setState(() => _isLoading = true);
+
+    try {
+      // 1. Verificar/Pedir permisos de GPS
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) throw 'Permisos de ubicación denegados.';
+      }
+      
+      // 2. Obtener detalles del remitente para la pantalla de emergencia
+      final senderGrade = widget.selectedProfile.Abreviatura;
+      final senderLodge = widget.selectedProfile.LogiaNombre;
+      
+      // Intentar obtener el nombre de la Gran Logia
+      String senderGrandLodge = 'Jurisdicción Cosmos';
+      try {
+        final currentLodgeId = widget.selectedProfile.idLogia;
+        final currentLodgeData = widget.root.catalogos.logias_catalogo.firstWhere(
+          (l) => l.idLogia == currentLodgeId
+        );
+        final gdLodgeData = widget.root.catalogos.logias_catalogo.firstWhere(
+          (l) => l.idLogia == currentLodgeData.idGranLogia
+        );
+        senderGrandLodge = gdLodgeData.Nombre;
+      } catch (_) {}
+
+      // 3. Obtener ubicación
+      Position pos = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high
+      );
+
+      // 4. Llamar a Edge Function con el nuevo protocolo
+      final payload = {
+        'sender_id': widget.root.user.idUsuario,
+        'sender_name': widget.root.user.Nombre,
+        'sender_phone': widget.root.user.Telefono,
+        'sender_grade': senderGrade,
+        'sender_lodge': senderLodge,
+        'sender_gran_logia': senderGrandLodge,
+        'type': type,
+        'assistance_details': details,
+        'lat': pos.latitude,
+        'lon': pos.longitude,
+        'radius_km': 15,
+      };
+      
+      debugPrint('Enviando alerta pánico: $payload');
+
+      final res = await _supabase.functions.invoke('panic-alert', body: payload);
+
+      if (res.status != 200) throw 'Error al enviar alerta: ${res.status}';
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Alerta enviada correctamente.'), backgroundColor: Colors.green)
+        );
+      }
+
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red)
+        );
+        print ('Error: $e');
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _showAssistanceDialog() {
+    String selectedType = 'Médico';
+    final detailsCtrl = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: const Text('Solicitud de Auxilio'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DropdownButtonFormField<String>(
+                value: selectedType,
+                items: ['Médico', 'Mecánico', 'Seguridad', 'Vial', 'Otro']
+                    .map((t) => DropdownMenuItem(value: t, child: Text(t)))
+                    .toList(),
+                onChanged: (v) => selectedType = v ?? 'Otro',
+                decoration: const InputDecoration(labelText: 'Tipo de ayuda'),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: detailsCtrl,
+                decoration: const InputDecoration(labelText: 'Detalles (opcional)', border: OutlineInputBorder()),
+                maxLines: 2,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+              onPressed: () {
+                Navigator.pop(ctx);
+                _triggerAlert('assistance', details: '${selectedType}: ${detailsCtrl.text}');
+              },
+              child: const Text('Enviar Auxilio'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  bool _isLoading = false;
 
   // -----------------------
   // UI: Formulario para agregar/editar
@@ -376,58 +535,143 @@ class _EmergenciesScreenState extends State<EmergenciesScreen> {
       body: FutureBuilder<List<EmergencyModel>>(
         future: _emergenciesFuture,
         builder: (context, snap) {
+          final theme = _getThemeColors();
+          final c1 = theme['bg']!;
+          final c2 = theme['text']!;
+          final c3 = theme['card']!;
+          final c4 = theme['accent']!;
+
           if (snap.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator(color: c3));
-          } else if (snap.hasError) {
+            return Center(child: CircularProgressIndicator(color: c4));
+          }
+
+          if (snap.hasError) {
             return Center(child: Text('Error: ${snap.error}', style: TextStyle(color: c2)));
-          } else if (!snap.hasData || snap.data!.isEmpty) {
-            return Center(child: Text('No tienes contactos de emergencia.', style: TextStyle(color: c2)));
-          } else {
-            final list = snap.data!;
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                //Padding(
-                //  padding: const EdgeInsets.all(16.0),
-                //  child: Text('Tus contactos de emergencia', style: TextStyle(color: c2, fontSize: 18, fontWeight: FontWeight.bold)),
-              // ),
+          }
+
+          final list = snap.data ?? [];
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: theme['card'], 
+                  color: c3,
                   borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
                   boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)]
                 ),
                 child: Row(
                   children: [
                     CircleAvatar(
-                      backgroundColor: theme['bg'],
+                      backgroundColor: c1,
                       radius: 24,
-                      child: Icon(Icons.local_hospital, color: theme['accent']),//Icons.account_balance_wallet, color: theme['accent']),
+                      child: Icon(Icons.local_hospital, color: c4),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Tus contactos de emergencia', style: TextStyle(color: theme['text'], fontWeight: FontWeight.bold, fontSize: 16)),
-                          //Text(widget.selectedProfile.LogiaNombre, style: TextStyle(color: theme['text']?.withOpacity(0.7), fontSize: 12)),
+                          Text('Tus contactos de emergencia',
+                              style: TextStyle(color: c2, fontWeight: FontWeight.bold, fontSize: 16)),
                         ],
                       ),
                     ),
-                    ],
+                  ],
                 ),
               ),
-                Expanded(
-                  child: ListView.builder(
-                    itemCount: list.length,
-                    itemBuilder: (context, i) => _buildContactCard(list[i], c1, c2, c3, c4),
+              if (_isXiaomi && !_miuiPermissionsGranted)
+                Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.blue.shade200),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.info_outline, color: Colors.blue.shade700, size: 20),
+                          const SizedBox(width: 8),
+                          const Expanded(
+                            child: Text(
+                              'Configuración para Xiaomi/MIUI',
+                              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'Para que la alerta despierte tu equipo, debes activar "Mostrar en pantalla de bloqueo" en la siguiente pantalla.',
+                        style: TextStyle(fontSize: 12),
+                      ),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton.icon(
+                          onPressed: _openXiaomiSettings,
+                          icon: const Icon(Icons.settings_suggest, size: 18),
+                          label: const Text('Configurar Directo'),
+                          style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
-            );
-          }
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: _isLoading ? null : () => _triggerAlert('panic'),
+                        icon: const Icon(Icons.warning, color: Colors.white),
+                        label: const Text('PÁNICO', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red.shade700,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: _isLoading ? null : _showAssistanceDialog,
+                        icon: const Icon(Icons.help_outline, color: Colors.white),
+                        label: const Text('AUXILIO', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orange.shade800,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (_isLoading) const LinearProgressIndicator(color: Colors.red),
+              Expanded(
+                child: list.isEmpty
+                    ? Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(20.0),
+                          child: Text('No tienes contactos de emergencia.',
+                              textAlign: TextAlign.center, style: TextStyle(color: c2, fontSize: 16)),
+                        ),
+                      )
+                    : ListView.builder(
+                        itemCount: list.length,
+                        itemBuilder: (context, i) => _buildContactCard(list[i], c1, c2, c3, c4),
+                      ),
+              ),
+            ],
+          );
         },
       ),
       floatingActionButton: _hasPermission(1)

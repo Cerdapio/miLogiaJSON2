@@ -4,10 +4,9 @@ import 'package:file_picker/file_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-// Asegúrate de que las rutas sean correctas según tu estructura de carpetas
-import '../config/auth_config.dart'; // Contiene clases como LogiaTheme (si lo usas)
-import '../models/user_model.dart'; // Contiene RootModel, Documento, PerfilOpcion, etc.
-import 'app_drawer.dart'; // Tu clase AppDrawer
+import '../config/auth_config.dart'; 
+import '../models/user_model.dart'; 
+import 'app_drawer.dart'; 
 import '../utils/dropdown_utils.dart';
 
 class DocumentsScreen extends StatefulWidget {
@@ -23,22 +22,17 @@ class DocumentsScreen extends StatefulWidget {
 class _DocumentsScreenState extends State<DocumentsScreen> with SingleTickerProviderStateMixin {
   final _supabase = Supabase.instance.client;
   
-  // Variables para el formulario
   DocumentosCatalogo? _selectedDocType;
   int? _selectedGrado;
   final TextEditingController _descripcionController = TextEditingController();
   bool _isLoading = false;
 
-  // Mapa para agrupar documentos
   Map<int, List<Documento>> _groupedDocuments = {};
-  
-  // _radios eliminada. Usamos widget.root.user.radios
 
   @override
   void initState() {
     super.initState();
     _groupDocumentsByGrade();
-    // _fetchRadios() eliminado
   }
 
   @override
@@ -47,13 +41,8 @@ class _DocumentsScreenState extends State<DocumentsScreen> with SingleTickerProv
     super.dispose();
   }
 
-  // Se elimina didChangeDependencies ya que _isSecretary se calcula en initState
-
-  /// CORRECCIÓN FINAL: Filtra por la Logia Seleccionada y luego agrupa por el idGrado del documento.
   void _groupDocumentsByGrade() {
-    // ... (El contenido de esta función no cambia, pero necesitamos asegurarnos de que se conecta bien)
     final Map<int, List<Documento>> tempMap = {};
-    
     final int currentLogiaId = widget.selectedProfile?.idLogia ?? 0;
     
     final filteredDocuments = widget.root.user.documentos.where((userDoc) {
@@ -81,7 +70,6 @@ class _DocumentsScreenState extends State<DocumentsScreen> with SingleTickerProv
   List<RadioModel> _getFilteredRadios() {
     final currentLogiaId = widget.selectedProfile?.idLogia ?? 0;
     
-    // Buscar idGranLogia de la logia actual usando logias_catalogo
     int idGranLogia = 0;
     try {
         final currentLogiaData = widget.root.catalogos.logias_catalogo
@@ -90,20 +78,12 @@ class _DocumentsScreenState extends State<DocumentsScreen> with SingleTickerProv
     } catch (_) {}
 
     return widget.root.user.radios.where((radio) {
-      // 1. target_audience = 'all_lodges' (Para todos)
       if (radio.targetAudience == 'all_lodges') return true;
-
-      // 2. issuing_logia_id = currentLogiaId (Emitidos por mi propia logia)
       if (radio.issuingLogiaId == currentLogiaId) return true;
-
-      // 3. target_audience = 'subordinate_lodges' AND issuing_logia_id = idGranLogia
       if (radio.targetAudience == 'subordinate_lodges' && radio.issuingLogiaId == idGranLogia) return true;
-
       return false;
     }).toList();
   }
-
-  // --- LÓGICA DE PAGO Y SOLICITUD ---
 
   String _getCuentaBancariaForLogia() {
     final currentLogiaId = widget.selectedProfile?.idLogia ?? 0;
@@ -116,62 +96,45 @@ class _DocumentsScreenState extends State<DocumentsScreen> with SingleTickerProv
         }
       }
     }
-    for (var concepto in allConcepts) {
-      for (var detalle in concepto.detalles) {
-        if (detalle.ctaBanco.isNotEmpty) {
-          return detalle.ctaBanco;
-        }
-      }
-    }
     return 'N/A - Cuenta no configurada';
   }
 
-  /// Busca el detalle específico del concepto cruzando Logia + Grado solicitado.
   ConceptoDetalle? _getDetallePagoEspecifico() {
     if (_selectedDocType == null) return null;
 
     final gradoBusqueda = _selectedDocType!.RequiereGrado ? (_selectedGrado ?? 0) : 0;
-    int idConceptoGenericoStr = 0;
+    int idConceptoGenerico = 0;
 
     try {
-      // 1. Obtener el ID de Concepto genérico del documento para el grado seleccionado
       final detalleDoc = _selectedDocType!.detalles.firstWhere(
         (d) => d.Grado == gradoBusqueda,
         orElse: () => _selectedDocType!.detalles.first, 
       );
-      // Asumo que idConcepto en DocumentosCatalogoDetalle es de tipo String
-      idConceptoGenericoStr = detalleDoc.idConcepto; 
+      idConceptoGenerico = detalleDoc.idConcepto; 
     } catch (e) {
       return null; 
     }
     
-    final int idConceptoGenerico = idConceptoGenericoStr ?? 0;
     if (idConceptoGenerico == 0) return null;
 
     try {
-      // 2. Buscar en el catálogo de conceptos
       final conceptoCat = widget.root.catalogos.conceptos_catalogo.firstWhere(
         (c) => c.idConcepto == idConceptoGenerico,
       );
 
       final idLogiaActual = widget.selectedProfile?.idLogia ?? 0;
       
-      // 3. Filtrar el detalle exacto (Logia + Grado) para obtener el costo y el iddConcepto
       final detalleEspecifico = conceptoCat.detalles.firstWhere(
         (d) => d.iddLogia == idLogiaActual && d.idGrado == gradoBusqueda,
         orElse: () {
-            // Fallback: Buscar solo por Logia si el grado no es específico
              return conceptoCat.detalles.firstWhere(
                 (d) => d.iddLogia == idLogiaActual,
-                orElse: () => conceptoCat.detalles.first // Último recurso
+                orElse: () => conceptoCat.detalles.first
              );
         }
       );
-
       return detalleEspecifico;
-
     } catch (e) {
-      debugPrint("Error buscando detalle específico: $e");
       return null;
     }
   }
@@ -192,13 +155,11 @@ class _DocumentsScreenState extends State<DocumentsScreen> with SingleTickerProv
 
     try {
       if (_selectedDocType!.RequierePago) {
-        // Obtenemos el ConceptoDetalle que contiene el iddConcepto correcto y el costo
         final detallePago = _getDetallePagoEspecifico();
-        
         if (detallePago != null && detallePago.Costo > 0) {
            await _generarPagoReferencia(detallePago);
         } else {
-           _showErrorDialog("Error de Configuración", "No se encontró costo o configuración para este documento en tu Logia.");
+           _showErrorDialog("Error de Configuración", "No se encontró costo para este documento en tu Logia.");
         }
       } else {
         _showSuccessDialog("Solicitud Enviada", "Tu solicitud de ${_selectedDocType!.Descripcion} ha sido registrada.");
@@ -210,11 +171,10 @@ class _DocumentsScreenState extends State<DocumentsScreen> with SingleTickerProv
     }
   }
 
-  /// Genera la referencia de pago usando el iddConcepto REAL.
   Future<void> _generarPagoReferencia(ConceptoDetalle detallePago) async {
     final fecha = DateTime.now().toIso8601String();
     final importe = detallePago.Costo;
-    final iddConceptoReal = detallePago.iddConcepto; // El ID específico
+    final iddConceptoReal = detallePago.iddConcepto;
 
     try {
       final insertRes = await _supabase
@@ -234,7 +194,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> with SingleTickerProv
 
       await _supabase.from('movdPagos').insert({
         'idPago': idPagoGenerado,
-        'iddConcepto': iddConceptoReal, // GUARDAMOS EL ID ESPECÍFICO CORRECTO
+        'iddConcepto': iddConceptoReal,
         'Cantidad': 1,
       });
 
@@ -242,180 +202,12 @@ class _DocumentsScreenState extends State<DocumentsScreen> with SingleTickerProv
         Navigator.of(context).pop(); 
         _showPaymentSlipDialog(idPagoGenerado, importe, _selectedDocType!.Descripcion);
       }
-  }
-
-  Widget _infoRow(String label, String value, Map<String, Color> theme, {bool isBold = false}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: TextStyle(color: theme['text'], fontSize: 13)),
-          Flexible(
-            child: Text(value, 
-              style: TextStyle(
-                color: isBold ? theme['accent'] : theme['text'], 
-                fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
-                fontSize: isBold ? 15 : 13
-              ),
-              textAlign: TextAlign.right,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showErrorDialog(String title, String msg) {
-    showDialog(context: context, builder: (_) => AlertDialog(title: Text(title, style: const TextStyle(color: Colors.red)), content: Text(msg), actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text("OK"))]));
-  }
-  
-  void _showSuccessDialog(String title, String msg) {
-    showDialog(context: context, builder: (_) => AlertDialog(title: Text(title, style: const TextStyle(color: Colors.green)), content: Text(msg), actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text("OK"))]));
-  }
-
-  // --- WIDGETS DE UI ---
-
-  Widget _buildMyDocumentsView(Map<String, Color> theme) {
-    final sortedGrades = _groupedDocuments.keys.toList()..sort();
-    final visibleRadios = _getFilteredRadios(); // Obtener radios filtrados
-
-    return Column(
-      children: [
-        // ... (Header)
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: theme['card'],
-            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)]
-          ),
-          child: Row(
-            children: [
-              CircleAvatar(
-                backgroundColor: theme['bg'],
-                radius: 24,
-                child: Icon(Icons.folder_shared, color: theme['accent']),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Biblioteca Personal', style: TextStyle(color: theme['text'], fontWeight: FontWeight.bold, fontSize: 16)),
-                    Text('${_groupedDocuments.values.expand((x) => x).length} documentos de esta Logia', style: TextStyle(color: theme['text']?.withOpacity(0.7), fontSize: 12)),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 10),
-        Expanded(
-          child: ListView(
-            padding: const EdgeInsets.only(bottom: 80),
-            children: [
-              // SECCIÓN DE RADIOS / COMUNICADOS
-              if (visibleRadios.isNotEmpty)
-                Card(
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  color: theme['card'],
-                  elevation: 1,
-                  child: Theme(
-                    data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-                    child: ExpansionTile(
-                      initiallyExpanded: true,
-                      iconColor: theme['accent'],
-                      collapsedIconColor: theme['text'],
-                      leading: Icon(Icons.radio, color: theme['accent']),
-                      title: Text(
-                        'Comunicados Oficiales',
-                        style: TextStyle(color: theme['accent'], fontWeight: FontWeight.bold, fontSize: 16),
-                      ),
-                      children: visibleRadios.map((radio) {
-                        return Container( // Renderizado de cada Radio
-                          margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          child: Card(
-                            elevation: 2, 
-                            color: Colors.white,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8), side: BorderSide(color: Colors.grey.shade200)),
-                            child: ListTile( // Usando ListTile para consistencia
-                              leading: Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(color: theme['bg'], shape: BoxShape.circle),
-                                child: Icon(Icons.campaign, color: theme['text']?.withOpacity(0.7), size: 20),
-                              ),
-                              title: Text(radio.title, style: TextStyle(color: theme['text'], fontWeight: FontWeight.w600)),
-                              subtitle: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  if (radio.description.isNotEmpty)
-                                    Padding(
-                                      padding: const EdgeInsets.only(top: 4.0),
-                                      child: Text(radio.description, style: TextStyle(color: theme['text']?.withOpacity(0.8), fontSize: 12), maxLines: 2, overflow: TextOverflow.ellipsis),
-                                    ),
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 4.0),
-                                    child: Row(
-                                      children: [
-                                        Icon(Icons.calendar_today, size: 12, color: theme['text']?.withOpacity(0.5)),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          radio.createdAt.isNotEmpty 
-                                            ? DateFormat('dd/MM/yyyy').format(DateTime.parse(radio.createdAt))
-                                            : '', 
-                                          style: TextStyle(color: theme['text']?.withOpacity(0.5), fontSize: 11)
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              onTap: () async {
-                                if (radio.documentUrl != null && radio.documentUrl!.isNotEmpty) {
-                                  final uri = Uri.parse(radio.documentUrl!);
-                                  if (await canLaunchUrl(uri)) {
-                                    await launchUrl(uri, mode: LaunchMode.externalApplication);
-                                  } else {
-                                    if (context.mounted) {
-                                       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("No se pudo abrir el documento: ${radio.title}")));
-                                    }
-                                  }
-                                }
-                              },
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                ),
-
-              // SECCIÓN DE DOCUMENTOS POR GRADO
-              if (sortedGrades.isEmpty && visibleRadios.isEmpty)
-                Padding(
-
-      final idPagoGenerado = insertRes['idPago'] as int;
-
-      await _supabase.from('movdPagos').insert({
-        'idPago': idPagoGenerado,
-        'iddConcepto': iddConceptoReal, // GUARDAMOS EL ID ESPECÍFICO CORRECTO
-        'Cantidad': 1,
-      });
-
-      if (mounted) {
-        Navigator.of(context).pop(); 
-        _showPaymentSlipDialog(idPagoGenerado, importe, _selectedDocType!.Descripcion);
-      }
-
     } on PostgrestException catch (e) {
       throw Exception(e.message);
+    } catch (e) {
+      throw Exception(e.toString());
     }
   }
-
-  // --- UI HELPERS ---
 
   Map<String, Color> _getThemeColors() {
     final colores = widget.selectedProfile?.colores;
@@ -434,14 +226,13 @@ class _DocumentsScreenState extends State<DocumentsScreen> with SingleTickerProv
         'card': parseHex(colores.C3, Colors.white),
         'accent': parseHex(colores.C4, const Color(0xFFDAA520)),
       };
-    } else {
-       return {
-        'bg': const Color(0xFFF5F5F5),
-        'text': const Color(0xFF222222),
-        'card': Colors.white,
-        'accent': const Color(0xFFDAA520),
-      };
     }
+    return {
+      'bg': const Color(0xFFF5F5F5),
+      'text': const Color(0xFF222222),
+      'card': Colors.white,
+      'accent': const Color(0xFFDAA520),
+    };
   }
 
   void _showRequestDialog() {
@@ -450,7 +241,6 @@ class _DocumentsScreenState extends State<DocumentsScreen> with SingleTickerProv
     _descripcionController.clear();
     
     final perfilId = widget.selectedProfile?.idPerfil ?? 0;
-    // Obtener el grado máximo del usuario, que es el límite superior de selección.
     final maxGradoUsuario = widget.selectedProfile?.idGrado ?? 0; 
 
     final docsSolicitables = widget.root.catalogos.documentos_catalogo
@@ -458,7 +248,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> with SingleTickerProv
           if (!d.Solicitud) return false;
           final desc = d.Descripcion.toLowerCase();
           if (desc.contains('radio') || desc.contains('plancha')) {
-            return perfilId == 5; // Solo perfil 5 puede solicitar estos (asumo)
+            return perfilId == 5; 
           }
           return true;
         })
@@ -470,16 +260,13 @@ class _DocumentsScreenState extends State<DocumentsScreen> with SingleTickerProv
         return StatefulBuilder(
           builder: (context, setStateDialog) {
             final theme = _getThemeColors();
-            
             final detallePreview = _getDetallePagoEspecifico();
             final costoPreview = detallePreview?.Costo;
 
-            // 1. OBTENER Y FILTRAR DETALLES: Usamos el objeto completo para tener Grado y NombreCorto.
             final List<DocumentosCatalogoDetalle> selectableDetails = _selectedDocType?.detalles
                 .where((det) => det.Grado > -1 && det.Grado <= maxGradoUsuario)
                 .toList() ?? [];
 
-            // 2. Ordenar por grado para mantener el orden de la lista.
             selectableDetails.sort((a, b) => a.Grado.compareTo(b.Grado));
 
             return AlertDialog(
@@ -494,7 +281,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> with SingleTickerProv
                     if (docsSolicitables.isEmpty)
                        Padding(
                         padding: const EdgeInsets.all(8.0),
-                        child: Text("No tienes permisos para solicitar documentos especiales.", style: TextStyle(color: theme['text'])),
+                        child: Text("No tienes permisos para solicitar documentos.", style: TextStyle(color: theme['text'])),
                       )
                     else
                       DropdownButtonFormField<DocumentosCatalogo>(
@@ -521,13 +308,10 @@ class _DocumentsScreenState extends State<DocumentsScreen> with SingleTickerProv
                         isExpanded: true,
                         decoration: InputDecoration(labelText: 'Grado (Max: $maxGradoUsuario)', labelStyle: TextStyle(color: theme['text'])),
                         dropdownColor: theme['card'],
-                        // USANDO selectableDetails
                         value: ensureValidDropdownValue(_selectedGrado, selectableDetails.map((d) => d.Grado).toList()),
                         items: selectableDetails.map((detail) {
                           return DropdownMenuItem<int>(
-                            // El valor (value) sigue siendo el int del grado
                             value: detail.Grado,
-                            // El texto (child) ahora es NombreCorto
                             child: Text(detail.NombreCorto, style: TextStyle(color: theme['text']), overflow: TextOverflow.ellipsis),
                           );
                         }).toList(),
@@ -541,9 +325,8 @@ class _DocumentsScreenState extends State<DocumentsScreen> with SingleTickerProv
                     if (_selectedDocType != null && _selectedDocType!.RequiereGrado && selectableDetails.isEmpty)
                        Padding(
                         padding: const EdgeInsets.only(top: 16.0),
-                        child: Text("No hay grados disponibles para solicitud en este documento (Max: $maxGradoUsuario).", style: TextStyle(color: Colors.red, fontSize: 12)),
+                        child: Text("No hay grados disponibles (Max: $maxGradoUsuario).", style: TextStyle(color: Colors.red, fontSize: 12)),
                       ),
-
 
                     if (_selectedDocType != null && (_selectedDocType!.RequiereDescripcion || _selectedDocType!.Descripcion == "Tema libre"))
                       Padding(
@@ -556,7 +339,6 @@ class _DocumentsScreenState extends State<DocumentsScreen> with SingleTickerProv
                             labelText: 'Descripción / Motivo',
                             labelStyle: TextStyle(color: theme['text']),
                             border: const OutlineInputBorder(),
-                            focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: theme['accent']!))
                           ),
                         ),
                       ),
@@ -614,34 +396,29 @@ class _DocumentsScreenState extends State<DocumentsScreen> with SingleTickerProv
         backgroundColor: theme['card'],
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: const Text("Referencia Generada"),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.check_circle, color: Colors.green, size: 60),
-              const SizedBox(height: 10),
-              Text("Se ha generado la referencia para: $concepto", textAlign: TextAlign.center, style: TextStyle(color: theme['text'])),
-              const SizedBox(height: 15),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: theme['bg'],
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.grey.withOpacity(0.3))
-                ),
-                child: Column(
-                  children: [
-                    _infoRow("Referencia:", "$idPago", theme),
-                    _infoRow("Cuenta Destino:", cuentaBanco, theme),
-                    const Divider(),
-                    _infoRow("Importe:", NumberFormat.currency(locale: 'es_MX', symbol: '\$').format(importe), theme, isBold: true),
-                  ],
-                ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.check_circle, color: Colors.green, size: 60),
+            const SizedBox(height: 10),
+            Text("Se ha generado la referencia para: $concepto", textAlign: TextAlign.center, style: TextStyle(color: theme['text'])),
+            const SizedBox(height: 15),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: theme['bg'],
+                borderRadius: BorderRadius.circular(8),
               ),
-              const SizedBox(height: 10),
-              const Text("Ve a la sección 'Mis Pagos' para ver el detalle completo.", style: TextStyle(fontSize: 12, color: Colors.grey)),
-            ],
-          ),
+              child: Column(
+                children: [
+                  _infoRow("Referencia:", "$idPago", theme),
+                  _infoRow("Cuenta Destino:", cuentaBanco, theme),
+                  const Divider(),
+                  _infoRow("Importe:", NumberFormat.currency(locale: 'es_MX', symbol: '\$').format(importe), theme, isBold: true),
+                ],
+              ),
+            ),
+          ],
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text("Entendido")),
@@ -680,13 +457,12 @@ class _DocumentsScreenState extends State<DocumentsScreen> with SingleTickerProv
     showDialog(context: context, builder: (_) => AlertDialog(title: Text(title, style: const TextStyle(color: Colors.green)), content: Text(msg), actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text("OK"))]));
   }
 
-  // --- WIDGETS DE UI ---
-
   Widget _buildMyDocumentsView(Map<String, Color> theme) {
     final sortedGrades = _groupedDocuments.keys.toList()..sort();
+    final visibleRadios = _getFilteredRadios();
+
     return Column(
       children: [
-        // ... (Header)
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(16),
@@ -720,8 +496,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> with SingleTickerProv
           child: ListView(
             padding: const EdgeInsets.only(bottom: 80),
             children: [
-              // SECCIÓN DE RADIOS / COMUNICADOS
-              if (_radios.isNotEmpty)
+              if (visibleRadios.isNotEmpty)
                 Card(
                   margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -738,27 +513,27 @@ class _DocumentsScreenState extends State<DocumentsScreen> with SingleTickerProv
                         'Comunicados Oficiales',
                         style: TextStyle(color: theme['accent'], fontWeight: FontWeight.bold, fontSize: 16),
                       ),
-                      children: _radios.map((radio) {
-                        return Container( // Renderizado de cada Radio
+                      children: visibleRadios.map((radio) {
+                        return Container(
                           margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                           child: Card(
                             elevation: 2, 
                             color: Colors.white,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8), side: BorderSide(color: Colors.grey.shade200)),
-                            child: ListTile( // Usando ListTile para consistencia
+                            child: ListTile(
                               leading: Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(color: theme['bg'], shape: BoxShape.circle),
                                 child: Icon(Icons.campaign, color: theme['text']?.withOpacity(0.7), size: 20),
                               ),
-                              title: Text(radio['title'] ?? 'Sin título', style: TextStyle(color: theme['text'], fontWeight: FontWeight.w600)),
+                              title: Text(radio.title, style: TextStyle(color: theme['text'], fontWeight: FontWeight.w600)),
                               subtitle: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  if (radio['description'] != null)
+                                  if (radio.description.isNotEmpty)
                                     Padding(
                                       padding: const EdgeInsets.only(top: 4.0),
-                                      child: Text(radio['description'], style: TextStyle(color: theme['text']?.withOpacity(0.8), fontSize: 12), maxLines: 2, overflow: TextOverflow.ellipsis),
+                                      child: Text(radio.description, style: TextStyle(color: theme['text']?.withOpacity(0.8), fontSize: 12), maxLines: 2, overflow: TextOverflow.ellipsis),
                                     ),
                                   Padding(
                                     padding: const EdgeInsets.only(top: 4.0),
@@ -767,8 +542,8 @@ class _DocumentsScreenState extends State<DocumentsScreen> with SingleTickerProv
                                         Icon(Icons.calendar_today, size: 12, color: theme['text']?.withOpacity(0.5)),
                                         const SizedBox(width: 4),
                                         Text(
-                                          radio['created_at'] != null 
-                                            ? DateFormat('dd/MM/yyyy').format(DateTime.parse(radio['created_at']))
+                                          radio.createdAt.isNotEmpty 
+                                            ? DateFormat('dd/MM/yyyy').format(DateTime.parse(radio.createdAt))
                                             : '', 
                                           style: TextStyle(color: theme['text']?.withOpacity(0.5), fontSize: 11)
                                         ),
@@ -778,14 +553,10 @@ class _DocumentsScreenState extends State<DocumentsScreen> with SingleTickerProv
                                 ],
                               ),
                               onTap: () async {
-                                if (radio['document_url'] != null) {
-                                  final uri = Uri.parse(radio['document_url']);
+                                if (radio.documentUrl != null && radio.documentUrl!.isNotEmpty) {
+                                  final uri = Uri.parse(radio.documentUrl!);
                                   if (await canLaunchUrl(uri)) {
                                     await launchUrl(uri, mode: LaunchMode.externalApplication);
-                                  } else {
-                                    if (context.mounted) {
-                                       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("No se pudo abrir el documento: ${radio['title']}")));
-                                    }
                                   }
                                 }
                               },
@@ -796,12 +567,10 @@ class _DocumentsScreenState extends State<DocumentsScreen> with SingleTickerProv
                     ),
                   ),
                 ),
-
-              // SECCIÓN DE DOCUMENTOS POR GRADO
-              if (sortedGrades.isEmpty && _radios.isEmpty)
+              if (sortedGrades.isEmpty && visibleRadios.isEmpty)
                 Padding(
                   padding: const EdgeInsets.all(20.0),
-                  child: Center(child: Text("No tienes documentos en esta logia.", style: TextStyle(color: theme['text']))),
+                  child: Center(child: Text("No tienes documentos.", style: TextStyle(color: theme['text']))),
                 )
               else
                 ...sortedGrades.map((grado) {
@@ -863,7 +632,6 @@ class _DocumentsScreenState extends State<DocumentsScreen> with SingleTickerProv
                                     ),
                                   ],
                                 ),
-                                onTap: () {},
                               ),
                             ),
                           );
@@ -878,7 +646,6 @@ class _DocumentsScreenState extends State<DocumentsScreen> with SingleTickerProv
       ],
     );
   }
-
 
   @override
   Widget build(BuildContext context) {

@@ -8,6 +8,65 @@ import 'package:timezone/timezone.dart' as tz;
 
 import '../models/user_model.dart';
 
+import 'package:milogia/screens/panic_alert_screen.dart';
+import 'package:milogia/main.dart'; // Para acceder al navigatorKey
+import 'package:firebase_core/firebase_core.dart'; // NUEVO: Importar Firebase Core
+import 'package:milogia/firebase_options.dart'; // NUEVO: Importar opciones generadas
+// import 'package:audioplayers/audioplayers.dart'; // Para el Alarm Stream (Si se agrega la dependencia)
+
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  // Inicializamos Firebase para el isolate del background
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  
+  debugPrint("🔥🔥🔥 [BACKGROUND HANDLER] Manejando mensaje en background: ${message.messageId}");
+  debugPrint("🔥 [BACKGROUND HANDLER] Data: ${message.data}");
+  debugPrint("🔥 [BACKGROUND HANDLER] Notification: ${message.notification?.toMap()}");
+  
+  if (message.data['type'] == 'PANIC_ALERT') {
+    debugPrint("🚨 [BACKGROUND HANDLER] ¡ALERTA DE PÁNICO DETECTADA!");
+    final service = NotificationService();
+    // Re-inicializar local notifications para este isolate
+    await service._initForBackground();
+    debugPrint("🚨 [BACKGROUND HANDLER] Servicio inicializado, mostrando notificación...");
+    
+    // 1. Mostrar notificación de pantalla completa
+    await service._showPanicFullScreenNotification(message.data);
+    debugPrint("🚨 [BACKGROUND HANDLER] Notificación mostrada exitosamente");
+    
+    // Nota: navigatorKey no funciona en background isolate. 
+    // La app saltará al frente por el FullScreenIntent.
+  } else {
+    debugPrint("ℹ️ [BACKGROUND HANDLER] Mensaje no es PANIC_ALERT, tipo: ${message.data['type']}");
+  }
+}
+
+void _handlePanicPayload(Map<String, dynamic> data) {
+  // 1. LÓGICA DE SONIDO (COMENTADA POR AHORA)
+  /*
+  final player = AudioPlayer();
+  player.setAudioContext(AudioContext(
+    android: AudioContextAndroid(
+      usageType: AndroidUsageType.alarm, // CLAVE: Canal de Alarma
+      contentType: AndroidContentType.sonification,
+      audioFocus: AndroidAudioFocus.gainTransient,
+    ),
+    ios: AudioContextIOS(category: AVAudioSessionCategory.playback),
+  ));
+  // await player.play(AssetSource('sounds/alarm.mp3'), volume: 1.0);
+  */
+
+  // 2. NAVEGACIÓN A PANTALLA COMPLETA
+  // Si la app ya está abierta, navegamos. Si no, el FullScreenIntent se encargará al abrirse.
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    MyApp.navigatorKey.currentState?.push(
+      MaterialPageRoute(builder: (context) => PanicAlertScreen(data: data))
+    );
+  });
+}
+
 class NotificationService {
   static final NotificationService _notificationService = NotificationService._internal();
   factory NotificationService() {
@@ -35,6 +94,21 @@ class NotificationService {
     );
     await flutterLocalNotificationsPlugin.initialize(initializationSettings);
 
+    // --- NUEVO: Crear Canal de Alerta Crítica para Pánico ---
+    const AndroidNotificationChannel panicChannel = AndroidNotificationChannel(
+      'panic_channel_critical', // ID
+      'Alertas Críticas de Pánico', // Nombre
+      description: 'Este canal se usa para alertas de emergencia vitales.',
+      importance: Importance.max,
+      playSound: false, // Lo manejamos nosotros manualmente para bypass silencio
+      enableVibration: true,
+      showBadge: true,
+    );
+
+    await flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(panicChannel);
+
     // --- NUEVO: Solicitar permisos en Android 13+ ---
     if (!kIsWeb) { // Solo ejecutar en plataformas móviles
       final AndroidFlutterLocalNotificationsPlugin? androidImplementation =
@@ -56,25 +130,70 @@ class NotificationService {
       alert: true,
       badge: true,
       sound: true,
+      criticalAlert: true, // NUEVO: Para iOS
     );
 
     debugPrint('Permiso de notificaciones: ${settings.authorizationStatus}');
 
+    // Obtener y mostrar el FCM token para pruebas
+    String? fcmToken = await _firebaseMessaging.getToken();
+    debugPrint('📱📱📱 FCM TOKEN: $fcmToken');
+    debugPrint('📱📱📱 Copia este token para enviar mensajes de prueba desde Supabase');
+
     // Escuchar mensajes en primer plano (Foreground)
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      debugPrint('Mensaje recibido en foreground: ${message.notification?.title}');
+      debugPrint('📱 [FOREGROUND] Mensaje recibido en foreground');
+      debugPrint('📱 [FOREGROUND] Data: ${message.data}');
+      debugPrint('📱 [FOREGROUND] Notification: ${message.notification?.toMap()}');
       
-      // Mostrar notificación localmente si la app está abierta
-      if (message.notification != null) {
+      if (message.data['type'] == 'PANIC_ALERT') {
+        debugPrint('🚨 [FOREGROUND] ¡ALERTA DE PÁNICO DETECTADA!');
+        _handlePanicPayload(message.data);
+      } else if (message.notification != null) {
+        debugPrint('ℹ️ [FOREGROUND] Mostrando notificación remota normal');
         _showRemoteNotification(message);
       }
     });
 
+    // Registrar el manejador de segundo plano
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
     // Manejar cuando la app se abre desde una notificación (Background -> Foreground)
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-       debugPrint('App abierta desde notificación: ${message.data}');
-       // Aquí podrías navegar a una pantalla específica usando message.data
+       debugPrint('🔔 [OPENED APP] App abierta desde notificación');
+       debugPrint('🔔 [OPENED APP] Data: ${message.data}');
+       if (message.data['type'] == 'PANIC_ALERT') {
+         debugPrint('🚨 [OPENED APP] Navegando a pantalla de pánico...');
+         _handlePanicPayload(message.data);
+       }
     });
+
+    // --- NUEVO: Manejar cuando la app se abre desde un estado CERRADO (Terminated) ---
+    FirebaseMessaging.instance.getInitialMessage().then((RemoteMessage? message) {
+      if (message != null) {
+        debugPrint('💀 [TERMINATED] App abierta desde estado cerrado por notificación');
+        debugPrint('💀 [TERMINATED] Data: ${message.data}');
+        if (message.data['type'] == 'PANIC_ALERT') {
+          debugPrint('🚨 [TERMINATED] Navegando a pantalla de pánico tras delay...');
+          // Pequeño delay para asegurar que el navigatorKey esté listo
+          Future.delayed(const Duration(milliseconds: 500), () {
+            _handlePanicPayload(message.data);
+          });
+        }
+      } else {
+        debugPrint('💀 [TERMINATED] No hay mensaje inicial');
+      }
+    });
+  }
+
+  /// Inicialización mínima para el isolate de background
+  Future<void> _initForBackground() async {
+    const AndroidInitializationSettings initializationSettingsAndroid =
+        AndroidInitializationSettings('@mipmap/ic_notification');
+    const InitializationSettings initializationSettings = InitializationSettings(
+      android: initializationSettingsAndroid,
+    );
+    await flutterLocalNotificationsPlugin.initialize(initializationSettings);
   }
 
   /// Recupera el token FCM actual y lo guarda en la base de datos (Contexto: Logia Actual)
@@ -137,7 +256,7 @@ class NotificationService {
         notification.hashCode,
         notification.title,
         notification.body,
-        const NotificationDetails(
+        NotificationDetails(
           android: AndroidNotificationDetails(
             'default_channel_id', // Canal por defecto para mensajes FCM
             'Avisos Generales',
@@ -202,7 +321,7 @@ class NotificationService {
     required tz.TZDateTime scheduledDate,
     required int logiaId, 
   }) async {
-    const androidDetails = AndroidNotificationDetails(
+    final androidDetails = AndroidNotificationDetails(
       'birthday_channel_id',
       'Notificaciones de Cumpleaños',
       channelDescription: 'Canal para recordatorios de cumpleaños.',
@@ -210,12 +329,12 @@ class NotificationService {
       priority: Priority.high,
       icon: '@mipmap/ic_notification', // APUNTAR EXPLÍCITAMENTE A MIPMAP
     );
-    const iosDetails = DarwinNotificationDetails(
+    final iosDetails = DarwinNotificationDetails(
       presentAlert: true, 
       presentBadge: true, 
       presentSound: true,
     );
-    const notificationDetails = NotificationDetails(
+    final notificationDetails = NotificationDetails(
       android: androidDetails,
       iOS: iosDetails,
     );
@@ -231,10 +350,79 @@ class NotificationService {
     );
   }
 
+  /// Muestra una notificación de pánico que despierta la app (Full Screen Intent)
+  Future<void> _showPanicFullScreenNotification(Map<String, dynamic> data) async {
+    debugPrint('🚨 [SHOW PANIC] Iniciando mostrar notificación de pánico...');
+    debugPrint('🚨 [SHOW PANIC] Data recibida: $data');
+    
+    final isPanic = data['alert_type'] == 'panic';
+    final name = data['sender_name'] ?? 'Hermano';
+    
+    debugPrint('🚨 [SHOW PANIC] isPanic: $isPanic, name: $name');
+    
+    final androidDetails = AndroidNotificationDetails(
+      'panic_channel_critical', // ID del canal de pánico
+      'Alertas Críticas de Pánico',
+      channelDescription: 'Este canal se usa para alertas de emergencia vitales.',
+      importance: Importance.max,
+      priority: Priority.high,
+      fullScreenIntent: true, // CLAVE: Lanza la app directamente
+      category: AndroidNotificationCategory.alarm,
+      enableVibration: true,
+      icon: '@mipmap/ic_notification',
+      visibility: NotificationVisibility.public,
+    );
+
+    final iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+      interruptionLevel: InterruptionLevel.critical, // Alerta Crítica en iOS
+    );
+
+    debugPrint('🚨 [SHOW PANIC] Llamando a flutterLocalNotificationsPlugin.show()...');
+    
+    await flutterLocalNotificationsPlugin.show(
+      0, // ID fijo para que solo haya una alerta activa si llegan varias
+      isPanic ? '¡ALERTA DE PÁNICO!' : 'SOLICITUD DE ASISTENCIA',
+      'El $name necesita ayuda inmediata.',
+      NotificationDetails(android: androidDetails, iOS: iosDetails),
+      payload: 'PANIC_ALERT', // Para manejar el toque si el intent no salta
+    );
+    
+    debugPrint('🚨 [SHOW PANIC] ✅ Notificación mostrada exitosamente');
+  }
+
+  /// Simula una alerta de pánico localmente (para pruebas sin backend)
+  Future<void> simulatePanicAlert() async {
+    debugPrint('🧪 [TEST] Simulando alerta de pánico local...');
+    
+    final testData = {
+      'type': 'PANIC_ALERT',
+      'alert_type': 'panic',
+      'sender_name': 'Q:.H:. Juan Pérez',
+      'sender_grade': 'M:.M:.',
+      'sender_lodge': 'Logia Ejemplo #123',
+      'sender_gran_logia': 'Gran Logia de México',
+      'sender_lat': '19.4326',
+      'sender_lon': '-99.1332',
+      'sender_phone': '5512345678',
+      'details': 'Esta es una prueba de alerta de pánico',
+    };
+    
+    debugPrint('🧪 [TEST] Mostrando notificación de pánico...');
+    await _showPanicFullScreenNotification(testData);
+    
+    debugPrint('🧪 [TEST] Navegando a pantalla de pánico...');
+    _handlePanicPayload(testData);
+    
+    debugPrint('🧪 [TEST] ✅ Simulación completada');
+  }
+
   // --- NUEVA FUNCIÓN PARA PRUEBAS ---
   /// Muestra una notificación de prueba de inmediato.
   Future<void> showTestNotification() async {
-    const androidDetails = AndroidNotificationDetails(
+    final androidDetails = AndroidNotificationDetails(
       'birthday_channel_id', // Debe ser el mismo ID de canal que las reales
       'Notificaciones de Cumpleaños',
       channelDescription: 'Canal para recordatorios de cumpleaños.',
@@ -242,12 +430,12 @@ class NotificationService {
       priority: Priority.high,
       icon: '@mipmap/ic_notification', // APUNTAR EXPLÍCITAMENTE A MIPMAP
     );
-    const iosDetails = DarwinNotificationDetails(
+    final iosDetails = DarwinNotificationDetails(
       presentAlert: true,
       presentBadge: true,
       presentSound: true,
     );
-    const notificationDetails = NotificationDetails(
+    final notificationDetails = NotificationDetails(
       android: androidDetails,
       iOS: iosDetails,
     );

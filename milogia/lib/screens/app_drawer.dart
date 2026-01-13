@@ -11,6 +11,7 @@ import 'profile_edit_screen.dart';
 import 'super_admin_screen.dart'; // Importar la nueva pantalla
 import 'radio_create_screen.dart'; 
 import 'payment_report_screen.dart';
+import 'panic_test_screen.dart'; // Pantalla de prueba de alertas
 // Integrated into PagoScreen:
 // import 'payment_validator_screen.dart';
 // import 'cash_collector_screen.dart';
@@ -200,6 +201,15 @@ class AppDrawer extends StatelessWidget {
                         ),
                       ],
                     ),
+
+                  // --- OPCIÓN DE PRUEBA DE PÁNICO (Solo en desarrollo) ---
+                  _buildMenuItem(
+                    context: context,
+                    icon: Icons.bug_report,
+                    text: '🧪 Prueba de Pánico',
+                    theme: theme,
+                    onTap: () => _navigateTo(context, const PanicTestScreen()),
+                  ),
 
                   // --- CAMBIAR PERFIL (ExpansionTile) ---
                   if (availableProfiles.isNotEmpty)

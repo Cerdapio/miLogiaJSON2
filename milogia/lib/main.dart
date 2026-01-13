@@ -52,6 +52,8 @@ Future<void> main() async {
 // -------------------------------------------------------------------
 
 class MyApp extends StatelessWidget {
+  static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
   const MyApp({super.key});
 
   @override
@@ -60,6 +62,7 @@ class MyApp extends StatelessWidget {
     final defaultTheme = LogiaTheme.defaultTheme();
 
     return MaterialApp(
+      navigatorKey: navigatorKey,
       title: 'Mi Logia App',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
