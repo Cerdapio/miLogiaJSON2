@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/user_model.dart';
+import '../config/l10n.dart';
 
 // --- IMPORTS DE PANTALLAS ---
 import 'home_screen.dart';
@@ -11,7 +12,6 @@ import 'profile_edit_screen.dart';
 import 'super_admin_screen.dart'; // Importar la nueva pantalla
 import 'radio_create_screen.dart'; 
 import 'payment_report_screen.dart';
-import 'panic_test_screen.dart'; // Pantalla de prueba de alertas
 // Integrated into PagoScreen:
 // import 'payment_validator_screen.dart';
 // import 'cash_collector_screen.dart';
@@ -126,42 +126,42 @@ class AppDrawer extends StatelessWidget {
                   _buildMenuItem(
                     context: context,
                     icon: Icons.home,
-                    text: 'Inicio / Mi Perfil',
+                    text: L10n.homeProfile(context),
                     theme: theme,
                     onTap: () => _navigateTo(context, HomeScreen(root: root, selectedProfile: selectedProfile)),
                   ),
                   _buildMenuItem(
                     context: context,
                     icon: Icons.person_outline,
-                    text: 'Editar Perfil',
+                    text: L10n.editProfile(context),
                     theme: theme,
                     onTap: () => _navigateTo(context, ProfileEditScreen(root: root, selectedProfile: selectedProfile)),
                   ),
                   _buildMenuItem(
                     context: context,
                     icon: Icons.local_hospital,
-                    text: 'Contactos Emergencia',
+                    text: L10n.emergencyContacts(context),
                     theme: theme,
                     onTap: () => _navigateTo(context, EmergenciesScreen(root: root, selectedProfile: selectedProfile)),
                   ),
                   _buildMenuItem(
                     context: context,
                     icon: Icons.monetization_on,
-                    text: 'Mis Pagos',
+                    text: L10n.myPayments(context),
                     theme: theme,
                     onTap: () => _navigateTo(context, PagoScreen(root: root, selectedProfile: selectedProfile)),
                   ),
                   _buildMenuItem(
                     context: context,
                     icon: Icons.folder_open,
-                    text: 'Mis Documentos',
+                    text: L10n.myDocuments(context),
                     theme: theme,
                     onTap: () => _navigateTo(context, DocumentsScreen(root: root, selectedProfile: selectedProfile)),
                   ),
                   _buildMenuItem(
                     context: context,
                     icon: Icons.upload_file,
-                    text: 'Reportar Transferencia',
+                    text: L10n.reportTransfer(context),
                     theme: theme,
                     onTap: () => _navigateTo(context, PaymentReportScreen(root: root, selectedProfile: selectedProfile)),
                   ),
@@ -171,52 +171,56 @@ class AppDrawer extends StatelessWidget {
                     _buildMenuItem(
                       context: context,
                       icon: Icons.broadcast_on_personal,
-                      text: 'Emitir Radio',
+                      text: L10n.emitRadio(context),
                       theme: theme,
                       onTap: () => _navigateTo(context, RadioCreateScreen(root: root, selectedProfile: selectedProfile)),
                     ),
 
+                  // --- OPCIÓN VENERABLE (Perfil 1) ---
+                  if (selectedProfile.idPerfil == 1)
+                     _buildMenuItem(
+                      context: context,
+                      icon: Icons.manage_accounts,
+                      text: "Gestión de Usuarios", // TODO: Localize if needed
+                      theme: theme,
+                      // Navigate to ProfileEditScreen but focus on Admin Tools
+                      // Assuming ProfileEditScreen handles showing Admin Tools for profile 1
+                      onTap: () => _navigateTo(context, ProfileEditScreen(root: root, selectedProfile: selectedProfile, initialTab: 1)),
+                    ),
+                  
                   // --- OPCIÓN TESORERO (Perfil 7) ---
                   if (selectedProfile.idPerfil == 7)
                     ExpansionTile(
                       leading: Icon(Icons.account_balance, color: theme['accent']),
                       title: Text(
-                        'Tesorería',
+                        L10n.treasury(context),
                         style: TextStyle(color: theme['text'], fontWeight: FontWeight.w500),
                       ),
                       children: [
                         _buildMenuItem(
                           context: context,
                           icon: Icons.fact_check,
-                          text: 'Validar Transferencias',
+                          text: L10n.validateTransfers(context),
                           theme: theme,
                           onTap: () => _navigateTo(context, PagoScreen(root: root, selectedProfile: selectedProfile, initialTab: 1)),
                         ),
                         _buildMenuItem(
                           context: context,
                           icon: Icons.point_of_sale,
-                          text: 'Cobro en Logia (Efectivo)',
+                          text: L10n.lodgePaymentCash(context),
                           theme: theme,
                           onTap: () => _navigateTo(context, PagoScreen(root: root, selectedProfile: selectedProfile, initialTab: 2)),
                         ),
                       ],
                     ),
 
-                  // --- OPCIÓN DE PRUEBA DE PÁNICO (Solo en desarrollo) ---
-                  _buildMenuItem(
-                    context: context,
-                    icon: Icons.bug_report,
-                    text: '🧪 Prueba de Pánico',
-                    theme: theme,
-                    onTap: () => _navigateTo(context, const PanicTestScreen()),
-                  ),
 
                   // --- CAMBIAR PERFIL (ExpansionTile) ---
                   if (availableProfiles.isNotEmpty)
                     ExpansionTile(
                       leading: Icon(Icons.swap_horiz, color: theme['accent']),
                       title: Text(
-                        'Cambiar Perfil',
+                        L10n.changeProfile(context),
                         style: TextStyle(color: theme['text'], fontWeight: FontWeight.w500),
                       ),
                       children: availableProfiles.map((profile) {
@@ -225,7 +229,7 @@ class AppDrawer extends StatelessWidget {
                           leading: Icon(Icons.account_circle, color: theme['text']?.withOpacity(0.7)),
                           title: Text(profile.LogiaNombre, style: TextStyle(color: theme['text'], fontSize: 14)),
                           subtitle: Text(
-                            profile.idPerfil == 0 ? 'Super Admin' : '${profile.GradoNombre}',
+                            profile.idPerfil == 0 ? L10n.superAdmin(context) : '${profile.GradoNombre}',
                             style: TextStyle(color: theme['text']?.withOpacity(0.6), fontSize: 12),
                           ),
                           onTap: () {
@@ -256,7 +260,7 @@ class AppDrawer extends StatelessWidget {
             const Divider(),
             ListTile(
               leading: const Icon(Icons.logout, color: Colors.red),
-              title: const Text('Cerrar Sesión', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+              title: Text(L10n.logoutLabel(context), style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
               onTap: () async {
                 await Supabase.instance.client.auth.signOut();
                 if (context.mounted) {

@@ -6,11 +6,12 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:image_picker/image_picker.dart';
 import 'package:milogia/config/auth_config.dart';
+import 'package:milogia/config/l10n.dart';
 import 'package:milogia/services/notification_service.dart';
 import 'package:milogia/screens/app_drawer.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/user_model.dart';
-import 'actas_screen.dart'; // Importar Pantalla de Actas
+// import 'actas_screen.dart'; // Importar Pantalla de Actas (REMOVED)
 
 
 //import 'home_screen.dart';
@@ -129,7 +130,7 @@ class _HomeScreenState extends State<HomeScreen> {
       });
       
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Foto de perfil actualizada correctamente.')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(L10n.profileUpdated(context))));
       }
     } catch (e) {
       if (mounted) {
@@ -303,7 +304,7 @@ class _HomeScreenState extends State<HomeScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Datos de Contacto',
+              L10n.contactData(context),
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -311,9 +312,9 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const Divider(height: 25),
-            _buildInfoRow(Icons.email, 'Correo Electrónico (Usuario)', userData.CorreoElectronico),
-            _buildInfoRow(Icons.phone, 'Teléfono', userData.Telefono),
-            _buildInfoRow(Icons.location_on, 'Dirección', userData.Direccion),
+            _buildInfoRow(Icons.email, '${L10n.emailLabel(context)} (Usuario)', userData.CorreoElectronico),
+            _buildInfoRow(Icons.phone, L10n.phoneLabel(context), userData.Telefono),
+            _buildInfoRow(Icons.location_on, L10n.addressLabel(context), userData.Direccion),
             const Divider(height: 25),
             //_buildInfoRow(Icons.badge, 'ID Usuario', userData.idUsuario.toString()),
           ],
@@ -378,54 +379,72 @@ List<String> masonesFamosos = [
     "Isaac Newton",
 ];
 
-  // Frases de respaldo por si la API falla o no encuentra coincidencias
-  final List<Map<String, String>> _fallbackQuotes = [
-    {'texto': 'Bien hecho es mejor que bien dicho.', 'autor': 'Benjamin Franklin'},
-    {'texto': 'El secreto de salir adelante es comenzar.', 'autor': 'Mark Twain'},
-    {'texto': 'El éxito no es el final, el fracaso no es fatal: es el coraje para continuar lo que cuenta.', 'autor': 'Winston Churchill'},
-    {'texto': 'Sé tú mismo; los demás puestos ya están ocupados.', 'autor': 'Oscar Wilde'},
-    {'texto': 'No estoy de acuerdo con lo que dices, pero defenderé con mi vida tu derecho a expresarlo.', 'autor': 'Voltaire'},
-    {'texto': 'La libertad, cuando empieza a echar raíces, es una planta de rápido crecimiento.', 'autor': 'George Washington'},
-    {'texto': 'El arte de vencer se aprende en las derrotas.', 'autor': 'Simón Bolívar'},
-    {'texto': 'La mejor manera de empezar es dejar de hablar y empezar a actuar.', 'autor': 'Walt Disney'},
-    {'texto': 'Saber no es suficiente, debemos aplicar. Querer no es suficiente, debemos hacer.', 'autor': 'Johann Wolfgang von Goethe'},
-    {'texto': 'Serás lo que debas ser o no serás nada.', 'autor': 'José de San Martín'},
-  ];
+  // Frases localizadas por idioma
+  final Map<String, List<Map<String, String>>> _localizedQuotes = {
+    'es': [
+      {'texto': 'Bien hecho es mejor que bien dicho.', 'autor': 'Benjamin Franklin'},
+      {'texto': 'El secreto de salir adelante es comenzar.', 'autor': 'Mark Twain'},
+      {'texto': 'El éxito no es el final, el fracaso no es fatal: es el coraje para continuar lo que cuenta.', 'autor': 'Winston Churchill'},
+      {'texto': 'Sé tú mismo; los demás puestos ya están ocupados.', 'autor': 'Oscar Wilde'},
+      {'texto': 'No estoy de acuerdo con lo que dices, pero defenderé con mi vida tu derecho a expresarlo.', 'autor': 'Voltaire'},
+      {'texto': 'La libertad, cuando empieza a echar raíces, es una planta de rápido crecimiento.', 'autor': 'George Washington'},
+      {'texto': 'El arte de vencer se aprende en las derrotas.', 'autor': 'Simón Bolívar'},
+      {'texto': 'La mejor manera de empezar es dejar de hablar y empezar a actuar.', 'autor': 'Walt Disney'},
+      {'texto': 'Saber no es suficiente, debemos aplicar. Querer no es suficiente, debemos hacer.', 'autor': 'Johann Wolfgang von Goethe'},
+      {'texto': 'Serás lo que debas ser o no serás nada.', 'autor': 'José de San Martín'},
+      {'texto': 'La inteligencia consiste no solo en el conocimiento, sino también en la destreza de aplicar los conocimientos en la práctica.', 'autor': 'Aristóteles'},
+      {'texto': 'Solo hay una forma de evitar la crítica: no hacer nada, no decir nada y no ser nada.', 'autor': 'Aristóteles'},
+    ],
+    'en': [
+      {'texto': 'Well done is better than well said.', 'autor': 'Benjamin Franklin'},
+      {'texto': 'The secret of getting ahead is getting started.', 'autor': 'Mark Twain'},
+      {'texto': 'Success is not final, failure is not fatal: it is the courage to continue that counts.', 'autor': 'Winston Churchill'},
+      {'texto': 'Be yourself; everyone else is already taken.', 'autor': 'Oscar Wilde'},
+      {'texto': 'I disapprove of what you say, but I will defend to the death your right to say it.', 'autor': 'Voltaire'},
+      {'texto': 'Liberty, when it begins to take root, is a plant of rapid growth.', 'autor': 'George Washington'},
+      {'texto': 'The art of victory is learned in defeat.', 'autor': 'Simón Bolívar'},
+      {'texto': 'The way to get started is to quit talking and begin doing.', 'autor': 'Walt Disney'},
+      {'texto': 'Knowing is not enough; we must apply. Willing is not enough; we must do.', 'autor': 'Johann Wolfgang von Goethe'},
+      {'texto': 'You will be what you must be, or else you will be nothing.', 'autor': 'José de San Martín'},
+      {'texto': 'Quality is not an act, it is a habit.', 'autor': 'Aristotle'},
+      {'texto': 'There is only one way to avoid criticism: do nothing, say nothing, and be nothing.', 'autor': 'Aristotle'},
+    ],
+  };
 
-  Future<Map<String, dynamic>> obtenerFrase() async {
-    // Intentamos obtener una lista de 50 frases para tener más probabilidad de encontrar un autor
-    final url = Uri.parse('https://zenquotes.io/api/quotes');
-    
-    try {
-      final respuesta = await http.get(url);
-      if (respuesta.statusCode == 200) {
-        List datos = jsonDecode(respuesta.body);
-        
-        // Filtramos por autores permitidos
-        final frasesFiltradas = datos.where((item) {
-          String authorName = item['a'] ?? '';
-          return masonesFamosos.any((allowed) => authorName.contains(allowed));
-        }).toList();
+  Future<Map<String, dynamic>> obtenerFrase(String lang) async {
+    // Si el idioma es inglés, intentamos usar la API de ZenQuotes (que está en inglés)
+    if (lang == 'en') {
+      final url = Uri.parse('https://zenquotes.io/api/quotes');
+      try {
+        final respuesta = await http.get(url);
+        if (respuesta.statusCode == 200) {
+          List datos = jsonDecode(respuesta.body);
+          final frasesFiltradas = datos.where((item) {
+            String authorName = item['a'] ?? '';
+            return masonesFamosos.any((allowed) => authorName.contains(allowed));
+          }).toList();
 
-        if (frasesFiltradas.isNotEmpty) {
-           // Retornamos una aleatoria de las filtradas
-           final randomItem = (frasesFiltradas..shuffle()).first;
-           return {
-             'texto': randomItem['q'],
-             'autor': randomItem['a'],
-           };
+          if (frasesFiltradas.isNotEmpty) {
+            final randomItem = (frasesFiltradas..shuffle()).first;
+            return {
+              'texto': randomItem['q'],
+              'autor': randomItem['a'],
+            };
+          }
         }
+      } catch (e) {
+        // Ignorar error y seguir al fallback
       }
-      // Si la API no contesta 200 o no hay coincidencias, lanzamos excepción para usar fallback
-      throw Exception('No quotes found from masonic authors');
-    } catch (e) {
-      // Fallback: Retorna una frase aleatoria de nuestra lista local
-      final randomFallback = (_fallbackQuotes..shuffle()).first;
-      return {
-        'texto': randomFallback['texto']!,
-        'autor': randomFallback['autor']!,
-      };
     }
+
+    // Fallback: Retorna una frase aleatoria de nuestra lista local filtrada por idioma
+    // Si el idioma no está soportado, usamos inglés por defecto
+    final quotes = _localizedQuotes[lang] ?? _localizedQuotes['en']!;
+    final randomFallback = (List.from(quotes)..shuffle()).first;
+    return {
+      'texto': randomFallback['texto']!,
+      'autor': randomFallback['autor']!,
+    };
   }
 
   Widget _buildQuoteCard(BuildContext context) {
@@ -443,7 +462,7 @@ List<String> masonesFamosos = [
                 Icon(Icons.format_quote, color: theme.secondaryColor, size: 30),
                 const SizedBox(width: 10),
                 Text(
-                  'Frase del Día',
+                  L10n.quoteOfTheDay(context),
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -454,12 +473,12 @@ List<String> masonesFamosos = [
             ),
             const Divider(height: 25),
             FutureBuilder<Map<String, dynamic>>(
-              future: obtenerFrase(),
+              future: obtenerFrase(Localizations.localeOf(context).languageCode),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
                 } else if (snapshot.hasError) {
-                  return Text('Error al cargar la frase.', style: TextStyle(color: Colors.red.shade300));
+                  return Text(L10n.errorLoadingQuote(context), style: TextStyle(color: Colors.red.shade300));
                 } else if (snapshot.hasData) {
                   final data = snapshot.data!;
                   return Column(
@@ -489,7 +508,7 @@ List<String> masonesFamosos = [
                     ],
                   );
                 } else {
-                  return const Text('Sin frase disponible.');
+                  return Text(L10n.noQuoteAvailable(context));
                 }
               },
             ),
@@ -508,7 +527,7 @@ List<String> masonesFamosos = [
       backgroundColor: theme.backgroundColor,
       appBar: AppBar(
         title: Text(
-          'MI PERFIL',
+          L10n.myProfile(context),
           style: TextStyle(
             color: theme.secondaryColor,
             fontWeight: FontWeight.bold,
@@ -529,24 +548,8 @@ List<String> masonesFamosos = [
             _buildProfileHeader(context),
             _buildPersonalInfoSection(context),
             _buildQuoteCard(context),
-            if (widget.selectedProfile.idPerfil == 5) // Solo Secretarios
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                child: SizedBox(
-                   width: double.infinity,
-                   height: 50,
-                   child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(backgroundColor: theme.accentColor),
-                      icon: const Icon(Icons.description, color: Colors.white),
-                      label: const Text('LEVANTAR ACTA', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                      onPressed: () {
-                         Navigator.push(context, MaterialPageRoute(
-                           builder: (context) => ActasScreen(root: widget.root, selectedProfile: widget.selectedProfile)
-                         ));
-                      },
-                   ),
-                ),
-              ),
+            if (widget.selectedProfile.idPerfil == 5) // Solo Secretarios (Radio Emission Only now)
+              const SizedBox.shrink(), // Button removed
             //Card(
               //elevation: 5,
               //margin: const EdgeInsets.only(top: 20, left: 10, right: 10),

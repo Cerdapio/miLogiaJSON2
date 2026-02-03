@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../models/user_model.dart';
 import '../models/pago_model.dart'; 
 import '../config/auth_config.dart'; 
+import '../config/l10n.dart';
 import 'app_drawer.dart';
 
 class PagoConcepto {
@@ -192,7 +193,7 @@ class _PagoScreenState extends State<PagoScreen> {
       }
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Pago aprobado con éxito.')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(L10n.paymentsApproved(context))));
         _fetchReportesPendientes();
         _pagosFuture = _consultarPagos(); // Recargar mis pagos por si acaso
       }
@@ -203,7 +204,7 @@ class _PagoScreenState extends State<PagoScreen> {
 
   Future<void> _saveCashPayment() async {
     if (_selectedMemberForCash == null || _conceptosCobroEfectivo.isEmpty) {
-      _showErrorDialog('Faltan datos', 'Selecciona un miembro y al menos un concepto.');
+      _showErrorDialog(L10n.dataMissing(context), L10n.selectMemberMsg(context));
       return;
     }
 
@@ -237,7 +238,7 @@ class _PagoScreenState extends State<PagoScreen> {
       await _supabase.from('movdPagos').insert(detalles);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Cobro de \$${total} registrado con éxito.')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${L10n.paymentRegisteredPrefix(context)}\$${total}${L10n.registeredSuccess(context)}')));
         setState(() {
           _selectedMemberForCash = null;
           _conceptosCobroEfectivo = [];
@@ -506,7 +507,7 @@ print('idUsuario: ${widget.root.user.idUsuario}, Importe: $totalImporte, Fecha: 
       }
 
       // 3. Fallback final
-      return 'N/A - Cuenta no configurada';
+      return L10n.notConfiguredAccount(context);
   }
   Future<void> _subirEstadosDeCuenta() async {
     // Lógica específica para tesoreros (Perfil 7)
@@ -536,24 +537,24 @@ print('idUsuario: ${widget.root.user.idUsuario}, Importe: $totalImporte, Fecha: 
         return AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           backgroundColor: themeColors['card'], 
-          title: const Text('Papeleta de Pago Generada'),
+          title: Text(L10n.paymentSlipTitle(context)),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Icon(Icons.check_circle_outline, color: Colors.green, size: 64),
                 const SizedBox(height: 12),
-                _infoRow('Referencia:', reference, themeColors['text']!),
-                _infoRow('Concepto:', concepto, themeColors['text']!),
+                _infoRow(L10n.referenceLabel(context), reference, themeColors['text']!),
+                _infoRow(L10n.conceptLabel(context), concepto, themeColors['text']!),
                 const SizedBox(height: 8),
                 // Aquí se usa la cuenta ya filtrada
                 _infoRow('Cuenta destino:', accountNumber, themeColors['text']!),
                 _infoRow('Importe a pagar:', formattedImporte, themeColors['text']!),
                 const Divider(),
-                const Text(
-                  'Realiza la transferencia usando EXACTAMENTE esta referencia. Conserva esta captura.',
+                Text(
+                  L10n.paymentInstruction(context),
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
+                  style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
                 ),
               ],
             ),
@@ -561,7 +562,7 @@ print('idUsuario: ${widget.root.user.idUsuario}, Importe: $totalImporte, Fecha: 
           actions: [
             ElevatedButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Entendido'),
+              child: Text(L10n.understoodButton(context)),
             ),
           ],
         );
@@ -578,7 +579,7 @@ Future<void> _showPaymentDetailDialog(PagoModel pago) async {
 
     // 1. Determinar el estado del pago
     final isProcessed = (pago.folio != null && pago.folio!.isNotEmpty && pago.folio != '0');
-    final statusText = isProcessed ? 'PAGO VALIDADO' : 'PENDIENTE DE VALIDAR';
+    final statusText = isProcessed ? L10n.paymentValidated(context) : L10n.pendingValidation(context);
     final statusColor = isProcessed ? Colors.green : Colors.redAccent;
     
     if (!mounted) return;
@@ -589,7 +590,7 @@ Future<void> _showPaymentDetailDialog(PagoModel pago) async {
         return AlertDialog(
           backgroundColor: theme['card'],
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          title: Text('Detalle Pago #${pago.idPago}'),
+          title: Text('${L10n.paymentDetailTitlePrefix(context)}${pago.idPago}'),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -615,15 +616,15 @@ Future<void> _showPaymentDetailDialog(PagoModel pago) async {
                 const SizedBox(height: 12),
                 // -------------------------------
                 Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                  Text('Fecha:', style: TextStyle(fontWeight: FontWeight.w600, color: theme['text'])),
+                  Text(L10n.dateLabel(context), style: TextStyle(fontWeight: FontWeight.w600, color: theme['text'])),
                   Text(pago.fecha, style: TextStyle(color: theme['text'])),
                 ]),
                 const Divider(),
                 // ... (El resto del contenido de los detalles)
-                Align(alignment: Alignment.centerLeft, child: Text('Conceptos:', style: TextStyle(fontWeight: FontWeight.bold, color: theme['text']))),
+                Align(alignment: Alignment.centerLeft, child: Text(L10n.conceptsLabel(context), style: TextStyle(fontWeight: FontWeight.bold, color: theme['text']))),
                 const SizedBox(height: 8),
                 if (detalles.isEmpty)
-                  const Text('Cargando detalles o sin conceptos...')
+                  Text(L10n.loadingDetails(context))
                 else
                   ...detalles.map((d) {
                     print(d.nombre);
@@ -641,19 +642,19 @@ Future<void> _showPaymentDetailDialog(PagoModel pago) async {
                   }).toList(),
                 const Divider(),
                 Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                  Text('TOTAL', style: TextStyle(fontWeight: FontWeight.bold, color: theme['text'])),
+                  Text(L10n.totalLabel(context), style: TextStyle(fontWeight: FontWeight.bold, color: theme['text'])),
                   Text(formattedTotal, style: TextStyle(fontWeight: FontWeight.bold, color: theme['accent'], fontSize: 16)),
                 ]),
                  if (isProcessed) // Solo muestra el folio si está procesado
                   Padding(
                     padding: const EdgeInsets.only(top: 8.0),
-                    child: Text('Folio Tesorería: ${pago.folio}', style: const TextStyle(fontStyle: FontStyle.italic)),
+                    child: Text('${L10n.treasuryFolio(context)} ${pago.folio}', style: const TextStyle(fontStyle: FontStyle.italic)),
                   ),
               ],
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Cerrar')),
+            TextButton(onPressed: () => Navigator.of(ctx).pop(), child: Text(L10n.closeButton(context))),
           ],
         );
       },
@@ -674,7 +675,7 @@ Future<void> _showPaymentDetailDialog(PagoModel pago) async {
           double currentTotal() => _conceptosSeleccionados.fold(0.0, (s, item) => s + item.subtotal);
 
           return AlertDialog(
-            title: const Text('Nuevo Pago'),
+            title: Text(L10n.newPayment(context)),
             content: SizedBox(
               width: double.maxFinite,
               child: SingleChildScrollView(
@@ -720,7 +721,7 @@ Future<void> _showPaymentDetailDialog(PagoModel pago) async {
                               ),
                               Row(
                                 children: [
-                                  const Text("Cantidad: "),
+                                  Text(L10n.quantityLabel(context)),
                                   SizedBox(
                                     width: 60,
                                     child: TextFormField(
@@ -767,7 +768,7 @@ Future<void> _showPaymentDetailDialog(PagoModel pago) async {
                         ));
                       },
                       icon: const Icon(Icons.add_circle),
-                      label: const Text('Agregar otro concepto'),
+                      label: Text(L10n.addConceptButton(context)),
                     ),
                     const Divider(),
                     Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
@@ -779,11 +780,11 @@ Future<void> _showPaymentDetailDialog(PagoModel pago) async {
               ),
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancelar')),
+              TextButton(onPressed: () => Navigator.of(context).pop(), child: Text(L10n.cancelButton(context))),
               ElevatedButton(
                 onPressed: _conceptosSeleccionados.isEmpty ? null : _generarReferencia,
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.black),
-                child: const Text('Generar Referencia', style: TextStyle(color: Colors.white)),
+                child: Text(L10n.generateReferenceButton(context), style: const TextStyle(color: Colors.white)),
               ),
             ],
           );
@@ -842,7 +843,7 @@ Future<void> _showPaymentDetailDialog(PagoModel pago) async {
         child: Scaffold(
           backgroundColor: theme['bg'],
           appBar: AppBar(
-            title: Text('Tesorería - ${widget.selectedProfile.LogiaNombre}', style: TextStyle(color: theme['text'])),
+            title: Text('${L10n.treasuryTitlePrefix(context)}${widget.selectedProfile.LogiaNombre}', style: TextStyle(color: theme['text'])),
             backgroundColor: theme['bg'],
             elevation: 0,
             iconTheme: IconThemeData(color: theme['text']),
@@ -850,10 +851,10 @@ Future<void> _showPaymentDetailDialog(PagoModel pago) async {
               labelColor: theme['accent'],
               unselectedLabelColor: theme['text']?.withOpacity(0.6),
               indicatorColor: theme['accent'],
-              tabs: const [
-                Tab(icon: Icon(Icons.person), text: "Mis Pagos"),
-                Tab(icon: Icon(Icons.fact_check), text: "Validar"),
-                Tab(icon: Icon(Icons.point_of_sale), text: "Cobro"),
+              tabs: [
+                Tab(icon: const Icon(Icons.person), text: L10n.myPaymentsTab(context)),
+                Tab(icon: const Icon(Icons.fact_check), text: L10n.validateTab(context)),
+                Tab(icon: const Icon(Icons.point_of_sale), text: L10n.collectionTab(context)),
               ],
             ),
           ),
@@ -870,7 +871,7 @@ Future<void> _showPaymentDetailDialog(PagoModel pago) async {
             foregroundColor: Colors.white,
             onPressed: _showConceptSelectionDialog,
             icon: const Icon(Icons.add),
-            label: const Text("Nuevo Pago"),
+            label: Text(L10n.newPayment(context)),
           ),
         ),
       );
@@ -879,7 +880,7 @@ Future<void> _showPaymentDetailDialog(PagoModel pago) async {
     return Scaffold(
       backgroundColor: theme['bg'],
       appBar: AppBar(
-        title: Text('Mis Pagos', style: TextStyle(color: theme['text'])),
+        title: Text(L10n.myPaymentsTab(context), style: TextStyle(color: theme['text'])),
         backgroundColor: theme['bg'],
         elevation: 0,
         iconTheme: IconThemeData(color: theme['text']),
@@ -894,7 +895,7 @@ Future<void> _showPaymentDetailDialog(PagoModel pago) async {
         foregroundColor: Colors.white,
         onPressed: _showConceptSelectionDialog,
         icon: const Icon(Icons.add),
-        label: const Text("Nuevo Pago"),
+        label: Text(L10n.newPayment(context)),
       ),
     );
   }
@@ -908,7 +909,7 @@ Future<void> _showPaymentDetailDialog(PagoModel pago) async {
           return Center(child: CircularProgressIndicator(color: theme['accent']));
         }
         if (snap.hasError) {
-          return Center(child: Text('Error al cargar pagos.', style: TextStyle(color: theme['text'])));
+          return Center(child: Text(L10n.errorLoadingPagos(context), style: TextStyle(color: theme['text'])));
         }
         
         final pagos = snap.data ?? [];
@@ -936,7 +937,7 @@ Future<void> _showPaymentDetailDialog(PagoModel pago) async {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Estado de Cuenta', style: TextStyle(color: theme['text'], fontWeight: FontWeight.bold, fontSize: 16)),
+                        Text(L10n.accountStatement(context), style: TextStyle(color: theme['text'], fontWeight: FontWeight.bold, fontSize: 16)),
                         Text(widget.selectedProfile.LogiaNombre, style: TextStyle(color: theme['text']?.withOpacity(0.7), fontSize: 12)),
                       ],
                     ),
@@ -945,7 +946,7 @@ Future<void> _showPaymentDetailDialog(PagoModel pago) async {
                     IconButton(
                       icon: const Icon(Icons.upload_file),
                       color: theme['accent'],
-                      tooltip: "Subir Estados de Cuenta",
+                      tooltip: L10n.uploadStatementsTooltip(context),
                       onPressed: _subirEstadosDeCuenta,
                     ),
                 ],
@@ -963,7 +964,7 @@ Future<void> _showPaymentDetailDialog(PagoModel pago) async {
                         children: [
                           Icon(Icons.receipt_long, size: 64, color: Colors.grey[400]),
                           const SizedBox(height: 16),
-                          Text('No tienes pagos registrados.', style: TextStyle(color: theme['text'])),
+                          Text(L10n.noPayments(context), style: TextStyle(color: theme['text'])),
                         ],
                       ),
                     )
@@ -978,7 +979,7 @@ Future<void> _showPaymentDetailDialog(PagoModel pago) async {
                           final p = pagos[i];
                           // Lógica de visualización basada en si tiene folio (pagado) o no
                           final isProcessed = (p.folio.isNotEmpty && p.folio != '0' && p.idFormaPago == 2);
-                          final statusText = isProcessed ? 'Procesado' : 'Pendiente';
+                          final statusText = isProcessed ? L10n.processedStatus(context) : L10n.pendingStatus(context);
                           final statusColor = isProcessed ? Colors.green : Colors.orange;
 
                           return Card(
@@ -1034,7 +1035,7 @@ Future<void> _showPaymentDetailDialog(PagoModel pago) async {
     return _isLoadingReportes
         ? const Center(child: CircularProgressIndicator())
         : _reportesPendientes.isEmpty
-            ? Center(child: Text('No hay transferencias por validar.', style: TextStyle(color: theme['text'])))
+            ? Center(child: Text(L10n.noTransfersToValidate(context), style: TextStyle(color: theme['text'])))
             : RefreshIndicator(
                 onRefresh: _fetchReportesPendientes,
                 child: ListView.builder(
@@ -1044,7 +1045,7 @@ Future<void> _showPaymentDetailDialog(PagoModel pago) async {
                     final r = _reportesPendientes[index];
                     final miembro = widget.root.catalogos.listaLogiasPorUsuario.firstWhere(
                       (m) => m.idUsuario == r.idUsuario,
-                      orElse: () => ListaLogiasPorUsuario(Nombre: 'Usuario Desconocido', idUsuario: 0, FechaNacimiento: '', perfiles: []),
+                      orElse: () => ListaLogiasPorUsuario(Nombre: L10n.isEn(context) ? 'Unknown User' : 'Usuario Desconocido', idUsuario: 0, FechaNacimiento: '', perfiles: []),
                     );
 
                     return Card(
@@ -1068,9 +1069,9 @@ Future<void> _showPaymentDetailDialog(PagoModel pago) async {
                               'Monto: \$${r.Monto} - Ref: ${r.ReferenciaUnica ?? "N/A"}',
                               style: TextStyle(color: theme['text']?.withOpacity(0.7), fontSize: 13),
                             ),
-                            if (r.idPago != null)
+                             if (r.idPago != null)
                               Text(
-                                'VINCULADO A PAGO #${r.idPago}',
+                                '${L10n.linkedToPayment(context)}${r.idPago}',
                                 style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 11),
                               ),
                           ],
@@ -1087,8 +1088,8 @@ Future<void> _showPaymentDetailDialog(PagoModel pago) async {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                _infoRow('Fecha Pago Real:', r.FechaPagoReal, theme['text']!),
-                                _infoRow('Folio Bancario:', r.FolioBancario ?? "N/A", theme['text']!),
+                                _infoRow(L10n.payDateLabel(context), r.FechaPagoReal, theme['text']!),
+                                _infoRow(L10n.bankFolioLabel(context), r.FolioBancario ?? "N/A", theme['text']!),
                                 const SizedBox(height: 15),
                                 if (r.UrlComprobante != null)
                                   InkWell(
@@ -1121,7 +1122,7 @@ Future<void> _showPaymentDetailDialog(PagoModel pago) async {
                                       child: OutlinedButton.icon(
                                         onPressed: () => _rejectReport(r),
                                         icon: const Icon(Icons.close, color: Colors.red, size: 18),
-                                        label: const Text('RECHAZAR', style: TextStyle(color: Colors.red, fontSize: 13)),
+                                        label: Text(L10n.rejectLabel(context), style: const TextStyle(color: Colors.red, fontSize: 13)),
                                         style: OutlinedButton.styleFrom(side: const BorderSide(color: Colors.red)),
                                       ),
                                     ),
@@ -1130,7 +1131,7 @@ Future<void> _showPaymentDetailDialog(PagoModel pago) async {
                                       child: ElevatedButton.icon(
                                         onPressed: () => _approveReport(r),
                                         icon: const Icon(Icons.check, color: Colors.white, size: 18),
-                                        label: const Text('APROBAR', style: TextStyle(color: Colors.white, fontSize: 13)),
+                                        label: Text(L10n.approveLabel(context), style: const TextStyle(color: Colors.white, fontSize: 13)),
                                         style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
                                       ),
                                     ),
@@ -1152,13 +1153,13 @@ Future<void> _showPaymentDetailDialog(PagoModel pago) async {
     await showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Rechazar Pago'),
+        title: Text(L10n.rejectPaymentTitle(context)),
         content: TextField(
-          decoration: const InputDecoration(labelText: 'Motivo del rechazo'),
+          decoration: InputDecoration(labelText: L10n.rejectReasonLabel(context)),
           onChanged: (v) => motivo = v,
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(L10n.cancel(context))),
           ElevatedButton(
             onPressed: () async {
               print('DEBUG: Botón RECHAZAR presionado');
@@ -1199,10 +1200,10 @@ Future<void> _showPaymentDetailDialog(PagoModel pago) async {
                 }
               }
 
-              Navigator.pop(ctx);
+               Navigator.pop(ctx);
               _fetchReportesPendientes();
             },
-            child: const Text('Rechazar'),
+            child: Text(L10n.rejectButton(context)),
           ),
         ],
       ),
@@ -1232,11 +1233,11 @@ Future<void> _showPaymentDetailDialog(PagoModel pago) async {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
+                   Row(
                     children: [
                       Icon(Icons.person_search, color: theme['accent'], size: 20),
                       const SizedBox(width: 8),
-                      Text('1. Seleccionar Miembro', style: TextStyle(color: theme['text'], fontSize: 15, fontWeight: FontWeight.bold)),
+                      Text(L10n.stepSelectMember(context), style: TextStyle(color: theme['text'], fontSize: 15, fontWeight: FontWeight.bold)),
                     ],
                   ),
                   const SizedBox(height: 12),
@@ -1244,10 +1245,10 @@ Future<void> _showPaymentDetailDialog(PagoModel pago) async {
                     value: _selectedMemberForCash,
                     decoration: InputDecoration(
                       filled: true,
-                      fillColor: theme['bg']?.withOpacity(0.3),
+                       fillColor: theme['bg']?.withOpacity(0.3),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
                       prefixIcon: Icon(Icons.person, color: theme['accent']),
-                      hintText: "Selecciona un hermano",
+                      hintText: L10n.hintSelectBrother(context),
                     ),
                     items: miembros.map((m) => DropdownMenuItem(value: m, child: Text(m.Nombre, style: const TextStyle(fontSize: 14)))).toList(),
                     onChanged: (v) => setState(() => _selectedMemberForCash = v),
@@ -1275,10 +1276,10 @@ Future<void> _showPaymentDetailDialog(PagoModel pago) async {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Row(
-                        children: [
+                         children: [
                           Icon(Icons.shopping_cart_checkout, color: theme['accent'], size: 20),
                           const SizedBox(width: 8),
-                          Text('2. Conceptos', style: TextStyle(color: theme['text'], fontSize: 15, fontWeight: FontWeight.bold)),
+                          Text(L10n.stepConcepts(context), style: TextStyle(color: theme['text'], fontSize: 15, fontWeight: FontWeight.bold)),
                         ],
                       ),
                       // Botón "Agregar" en el header si hay elementos
@@ -1297,7 +1298,7 @@ Future<void> _showPaymentDetailDialog(PagoModel pago) async {
                             }
                           },
                           icon: Icon(Icons.add_circle, color: theme['accent'], size: 20),
-                          label: Text('Agregar', style: TextStyle(color: theme['accent'])),
+                          label: Text(L10n.addButton(context), style: TextStyle(color: theme['accent'])),
                           style: TextButton.styleFrom(padding: EdgeInsets.zero, tapTargetSize: MaterialTapTargetSize.shrinkWrap),
                         ),
                     ],
@@ -1323,10 +1324,10 @@ Future<void> _showPaymentDetailDialog(PagoModel pago) async {
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
                           border: Border.all(color: Colors.grey.withOpacity(0.3), style: BorderStyle.solid), // Usando solid ;)
-                          borderRadius: BorderRadius.circular(12),
+                           borderRadius: BorderRadius.circular(12),
                           color: theme['bg']?.withOpacity(0.5),
                         ),
-                        child: const Center(child: Text('+ Agregar primer concepto', style: TextStyle(color: Colors.grey))),
+                        child: Center(child: Text(L10n.addFirstConcept(context), style: const TextStyle(color: Colors.grey))),
                       ),
                     )
                   else
@@ -1369,10 +1370,10 @@ Future<void> _showPaymentDetailDialog(PagoModel pago) async {
                                 );
                               }).toList(),
                             ),
-                            const Divider(height: 20),
+                             const Divider(height: 20),
                             Row(
                               children: [
-                                const Text("Cant: ", style: TextStyle(fontSize: 13)),
+                                Text(L10n.quantityPrefix(context), style: const TextStyle(fontSize: 13)),
                                 SizedBox(
                                   width: 50,
                                   child: TextFormField(
@@ -1425,10 +1426,10 @@ Future<void> _showPaymentDetailDialog(PagoModel pago) async {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
-                    children: [
+                     children: [
                       Icon(Icons.receipt_long, color: theme['accent'], size: 20),
                       const SizedBox(width: 8),
-                      Text('3. Folio Recibo Físico', style: TextStyle(color: theme['text'], fontSize: 15, fontWeight: FontWeight.bold)),
+                      Text(L10n.stepFolio(context), style: TextStyle(color: theme['text'], fontSize: 15, fontWeight: FontWeight.bold)),
                     ],
                   ),
                   const SizedBox(height: 12),
@@ -1436,9 +1437,9 @@ Future<void> _showPaymentDetailDialog(PagoModel pago) async {
                     controller: _folioEfectivoController,
                     decoration: InputDecoration(
                       filled: true,
-                      fillColor: theme['bg']?.withOpacity(0.3),
+                       fillColor: theme['bg']?.withOpacity(0.3),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
-                      hintText: 'Ej: A-1234',
+                      hintText: L10n.folioHint(context),
                       hintStyle: TextStyle(color: theme['text']?.withOpacity(0.3)),
                     ),
                   ),
@@ -1459,10 +1460,10 @@ Future<void> _showPaymentDetailDialog(PagoModel pago) async {
             ),
             child: Column(
               children: [
-                Row(
+                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('TOTAL A COBRAR:', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
+                    Text(L10n.totalToCharge(context), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
                     Text(NumberFormat.currency(locale: 'es_MX', symbol: '\$').format(totalCobro), 
                       style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
                   ],
@@ -1478,10 +1479,10 @@ Future<void> _showPaymentDetailDialog(PagoModel pago) async {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       elevation: 0,
                     ),
-                    onPressed: _isSavingCash ? null : _saveCashPayment,
+                     onPressed: _isSavingCash ? null : _saveCashPayment,
                     child: _isSavingCash
                         ? SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: theme['accent'], strokeWidth: 2))
-                        : const Text('REGISTRAR COBRO', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                        : Text(L10n.registerChargeButtonUpper(context), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                   ),
                 ),
               ],
@@ -1501,10 +1502,10 @@ Future<void> _showPaymentDetailDialog(PagoModel pago) async {
       builder: (ctx) {
         ConceptoCatalogo sel = _conceptosCatalogo.first;
         int cant = 1;
-        return StatefulBuilder(
+         return StatefulBuilder(
           builder: (context, setSt) {
             return AlertDialog(
-              title: const Text('Añadir Concepto'),
+              title: Text(L10n.addConceptTitle(context)),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -1518,9 +1519,9 @@ Future<void> _showPaymentDetailDialog(PagoModel pago) async {
                     onChanged: (v) { if (v != null) setSt(() => sel = v); },
                   ),
                   const SizedBox(height: 15),
-                  Row(
+                   Row(
                     children: [
-                      const Text('Cantidad:'),
+                      Text(L10n.quantityLabel(context)),
                       const SizedBox(width: 10),
                       IconButton(onPressed: () => setSt(() => cant = (cant > 1) ? cant - 1 : 1), icon: const Icon(Icons.remove)),
                       Text('$cant'),
@@ -1529,8 +1530,8 @@ Future<void> _showPaymentDetailDialog(PagoModel pago) async {
                   ),
                 ],
               ),
-              actions: [
-                TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+               actions: [
+                TextButton(onPressed: () => Navigator.pop(ctx), child: Text(L10n.cancel(context))),
                 ElevatedButton(
                   onPressed: () {
                     setState(() {
@@ -1542,7 +1543,7 @@ Future<void> _showPaymentDetailDialog(PagoModel pago) async {
                     });
                     Navigator.pop(ctx);
                   },
-                  child: const Text('Añadir'),
+                  child: Text(L10n.addButton(context)),
                 ),
               ],
             );

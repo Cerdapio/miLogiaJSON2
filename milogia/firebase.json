@@ -1,1 +1,24 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"milogianotifications","appId":"1:889586843338:android:4dafaed19cb0beb6a6fe33","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"milogianotifications","configurations":{"android":"1:889586843338:android:4dafaed19cb0beb6a6fe33","ios":"1:889586843338:ios:e302f97475612093a6fe33","macos":"1:889586843338:ios:e302f97475612093a6fe33","web":"1:889586843338:web:a2191c925fbacffba6fe33"}}}}}}
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "milogianotifications",
+          "appId": "1:889586843338:android:4dafaed19cb0beb6a6fe33",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "milogianotifications",
+          "configurations": {
+            "android": "1:889586843338:android:4dafaed19cb0beb6a6fe33",
+            "ios": "1:889586843338:ios:e302f97475612093a6fe33",
+            "macos": "1:889586843338:ios:e302f97475612093a6fe33",
+            "web": "1:889586843338:web:a2191c925fbacffba6fe33"
+          }
+        }
+      }
+    }
+  }
+}

@@ -9,6 +9,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:milogia/screens/app_drawer.dart';
 import 'package:milogia/screens/pago_screen.dart';
 import 'package:dio/dio.dart' as dio;
+import 'package:milogia/config/l10n.dart';
 
 class PaymentReportScreen extends StatefulWidget {
   final RootModel root;
@@ -114,12 +115,12 @@ class _PaymentReportScreenState extends State<PaymentReportScreen> {
         children: [
           ListTile(
             leading: const Icon(Icons.camera_alt),
-            title: const Text('Tomar Foto'),
+            title: Text(L10n.cameraLabel(context)),
             onTap: () async => Navigator.pop(ctx, await picker.pickImage(source: ImageSource.camera, imageQuality: 70)),
           ),
           ListTile(
             leading: const Icon(Icons.photo_library),
-            title: const Text('Galería'),
+            title: Text(L10n.galleryLabel(context)),
             onTap: () async => Navigator.pop(ctx, await picker.pickImage(source: ImageSource.gallery, imageQuality: 70)),
           ),
         ],
@@ -134,7 +135,7 @@ class _PaymentReportScreenState extends State<PaymentReportScreen> {
   Future<void> _submitReport() async {
     if (!_formKey.currentState!.validate() || _imageFile == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor llena todos los campos y sube la foto del comprobante')),
+        SnackBar(content: Text(L10n.fillAllFieldsMsg(context))),
       );
       return;
     }
@@ -188,7 +189,7 @@ class _PaymentReportScreenState extends State<PaymentReportScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Reporte enviado con éxito. El Tesorero lo validará pronto.')),
+          SnackBar(content: Text(L10n.reportSentSuccess(context))),
         );
         // Navegamos a PagoScreen para evitar pantalla negra (stack vacío desde Drawer)
         Navigator.pushReplacement(
@@ -216,7 +217,7 @@ class _PaymentReportScreenState extends State<PaymentReportScreen> {
     return Scaffold(
       backgroundColor: _theme.backgroundColor,
       appBar: AppBar(
-        title: Text('REPORTAR PAGO', style: TextStyle(color: _theme.secondaryColor, fontWeight: FontWeight.bold)),
+        title: Text(L10n.paymentReportTitle(context), style: TextStyle(color: _theme.secondaryColor, fontWeight: FontWeight.bold)),
         backgroundColor: _theme.primaryColor,
         iconTheme: IconThemeData(color: _theme.secondaryColor),
       ),
@@ -228,13 +229,13 @@ class _PaymentReportScreenState extends State<PaymentReportScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Ingresa los datos de tu transferencia', style: TextStyle(color: _theme.primaryColor, fontSize: 18, fontWeight: FontWeight.bold)),
+              Text(L10n.transferDataLabel(context), style: TextStyle(color: _theme.primaryColor, fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 20),
 
               if (_isLoadingPagos)
                 const Center(child: CircularProgressIndicator())
               else if (_pendingPagos.isNotEmpty) ...[
-                Text('Selecciona un pago pendiente (opcional)', style: TextStyle(color: _theme.primaryColor.withOpacity(0.7), fontSize: 14)),
+                Text(L10n.selectPendingPagoLabel(context), style: TextStyle(color: _theme.primaryColor.withOpacity(0.7), fontSize: 14)),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<PagoModel>(
                   value: _selectedPago,
@@ -245,11 +246,11 @@ class _PaymentReportScreenState extends State<PaymentReportScreen> {
                     prefixIcon: const Icon(Icons.list_alt),
                   ),
                   isExpanded: true,
-                  hint: const Text('Pagos generados sin reportar'),
+                  hint: Text(L10n.pendingPagosHint(context)),
                   items: [
-                    const DropdownMenuItem<PagoModel>(
+                    DropdownMenuItem<PagoModel>(
                       value: null,
-                      child: Text('Otro (Ingreso manual)'),
+                      child: Text(L10n.manualEntryLabel(context)),
                     ),
                     ..._pendingPagos.map((p) => DropdownMenuItem(
                       value: p,
@@ -280,11 +281,11 @@ class _PaymentReportScreenState extends State<PaymentReportScreen> {
                         controller: _montoController,
                         keyboardType: TextInputType.number,
                         decoration: InputDecoration(
-                          labelText: 'Monto Pagado',
+                          labelText: L10n.amountPaidLabel(context),
                           prefixText: '\$ ',
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                         ),
-                        validator: (v) => (v == null || v.isEmpty) ? 'Requerido' : null,
+                        validator: (v) => (v == null || v.isEmpty) ? L10n.requiredField(context) : null,
                       ),
                       const SizedBox(height: 15),
                       InkWell(
@@ -299,7 +300,7 @@ class _PaymentReportScreenState extends State<PaymentReportScreen> {
                         },
                         child: InputDecorator(
                           decoration: InputDecoration(
-                            labelText: 'Fecha del Pago',
+                            labelText: L10n.paymentDateLabel(context),
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                             prefixIcon: const Icon(Icons.calendar_today),
                           ),
@@ -310,7 +311,7 @@ class _PaymentReportScreenState extends State<PaymentReportScreen> {
                       TextFormField(
                         controller: _folioController,
                         decoration: InputDecoration(
-                          labelText: 'Folio o Clave de Rastreo (Opcional)',
+                          labelText: L10n.folioLabel(context),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                         ),
                       ),
@@ -318,7 +319,7 @@ class _PaymentReportScreenState extends State<PaymentReportScreen> {
                       TextFormField(
                         controller: _referenciaController,
                         decoration: InputDecoration(
-                          labelText: 'Referencia de la Ficha (Opcional)',
+                          labelText: L10n.receiptReferenceLabel(context),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                         ),
                       ),
@@ -328,7 +329,7 @@ class _PaymentReportScreenState extends State<PaymentReportScreen> {
               ),
               
               const SizedBox(height: 25),
-              Text('Comprobante (Imagen)', style: TextStyle(color: _theme.primaryColor, fontSize: 18, fontWeight: FontWeight.bold)),
+              Text(L10n.receiptImageLabel(context), style: TextStyle(color: _theme.primaryColor, fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 10),
               
               Center(
@@ -348,7 +349,7 @@ class _PaymentReportScreenState extends State<PaymentReportScreen> {
                             children: [
                               Icon(Icons.add_a_photo, size: 50, color: _theme.primaryColor),
                               const SizedBox(height: 10),
-                              const Text('Toca para subir foto del comprobante'),
+                              Text(L10n.uploadReceiptMsg(context)),
                             ],
                           )
                         : ClipRRect(
@@ -372,7 +373,7 @@ class _PaymentReportScreenState extends State<PaymentReportScreen> {
                   onPressed: _isUploading ? null : _submitReport,
                   child: _isUploading
                       ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text('ENVIAR REPORTE', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                      : Text(L10n.sendReportButton(context), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
                 ),
               ),
             ],

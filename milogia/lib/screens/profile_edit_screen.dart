@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/auth_config.dart'; 
+import '../config/l10n.dart';
 import '../models/user_model.dart';
 import '../utils/dropdown_utils.dart'; 
 import 'app_drawer.dart'; 
@@ -9,8 +10,9 @@ import 'app_drawer.dart';
 class ProfileEditScreen extends StatefulWidget {
   final RootModel root;
   final PerfilOpcion? selectedProfile; 
-
-  const ProfileEditScreen({super.key, required this.root, required this.selectedProfile});
+  final int initialTab;
+  
+  const ProfileEditScreen({super.key, required this.root, required this.selectedProfile, this.initialTab = 0});
     
   @override
   State<ProfileEditScreen> createState() => _ProfileEditScreenState();
@@ -131,7 +133,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
         widget.root.user.updateFromJson(updatedData);
       }
 
-    _showSuccessDialog("Actualización Exitosa", "Tus datos personales han sido actualizados.");
+    _showSuccessDialog(L10n.successfulUpdate(context), L10n.dataUpdatedMsg(context));
 
   } on PostgrestException catch (e) {
     _showErrorDialog("Error de Actualización", e.message);
@@ -157,7 +159,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
         return AlertDialog(
           backgroundColor: theme['card'],
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-          title: Text('Cambiar Contraseña', style: TextStyle(color: theme['text'])),
+          title: Text(L10n.changePasswordTitle(context), style: TextStyle(color: theme['text'])),
           content: StatefulBuilder(
             builder: (BuildContext context, StateSetter setStateDialog) {
               return Form(
@@ -166,11 +168,11 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
-                      _buildTextField(_currentPasswordController, 'Contraseña Anterior', theme, isPassword: true),
-                      _buildTextField(_newPasswordController, 'Nueva Contraseña', theme, isPassword: true, 
+                      _buildTextField(_currentPasswordController, L10n.currentPasswordLabel(context), theme, isPassword: true),
+                      _buildTextField(_newPasswordController, L10n.newPasswordLabel(context), theme, isPassword: true, 
                         validator: (value) {
                           if (value == null || value.length < 6) {
-                            return 'La nueva contraseña debe tener al menos 6 caracteres.';
+                            return L10n.passwordLengthError(context);
                           }
                           return null;
                         }
@@ -180,7 +182,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                         obscureText: true,
                         style: TextStyle(color: theme['text']),
                         decoration: InputDecoration(
-                          labelText: 'Confirmar Nueva Contraseña',
+                          labelText: L10n.confirmPasswordLabel(context),
                           labelStyle: TextStyle(color: theme['text']?.withOpacity(0.7)),
                           enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey.shade300)),
                           focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: theme['accent']!)),
@@ -188,10 +190,10 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Confirma la nueva contraseña.';
+                            return L10n.confirmPasswordError(context);
                           }
                           if (value != _newPasswordController.text) {
-                            return 'Las contraseñas no coinciden.';
+                            return L10n.passwordsNoMatch(context);
                           }
                           return null;
                         },
@@ -204,14 +206,14 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
           ),
           actions: <Widget>[
             TextButton(
-              child: Text('Cancelar', style: TextStyle(color: theme['text']?.withOpacity(0.7))),
+              child: Text(L10n.cancelButton(context), style: TextStyle(color: theme['text']?.withOpacity(0.7))),
               onPressed: () {
                 Navigator.of(context).pop();
               },
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: theme['accent']),
-              child: Text('Guardar', style: const TextStyle(color: Colors.white)),
+              child: Text(L10n.saveButton(context), style: const TextStyle(color: Colors.white)),
               onPressed: _isLoading ? null : () async {
                 if (_passwordFormKey.currentState!.validate()) {
                   setState(() => _isLoading = true);
@@ -332,20 +334,20 @@ await _supabase
           builder: (context, setStateDialog) {
             return AlertDialog(
               backgroundColor: theme['card'],
-              title: Text('Registrar Nuevo Miembro', style: TextStyle(color: theme['text'])),
+              title: Text(L10n.registerNewMemberTitle(context), style: TextStyle(color: theme['text'])),
               content: Form(
                 key: _newUserFormKey,
                 child: SingleChildScrollView(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
-                      _buildTextField(_newUserNameController, 'Nombre Completo', theme, validator: (v) => v!.isEmpty ? 'Requerido' : null),
-                      _buildTextField(_newUserEmailController, 'Correo Electrónico', theme, keyboardType: TextInputType.emailAddress, validator: (v) => (v == null || !v.contains('@')) ? 'Correo inválido' : null),
-                      _buildTextField(_newUserPasswordController, 'Contraseña', theme, isPassword: true, validator: (v) => (v == null || v.length < 6) ? 'Mínimo 6 caracteres' : null),
+                      _buildTextField(_newUserNameController, L10n.fullNameLabel(context), theme, validator: (v) => v!.isEmpty ? L10n.requiredError(context) : null),
+                      _buildTextField(_newUserEmailController, L10n.emailLabel(context), theme, keyboardType: TextInputType.emailAddress, validator: (v) => (v == null || !v.contains('@')) ? L10n.invalidEmailError(context) : null),
+                      _buildTextField(_newUserPasswordController, L10n.passwordLabel(context), theme, isPassword: true, validator: (v) => (v == null || v.length < 6) ? L10n.minCharsError(context) : null),
                       const SizedBox(height: 16),
                       DropdownButtonFormField<int>(
                         isExpanded: true, 
-                        decoration: InputDecoration(labelText: 'Perfil', labelStyle: TextStyle(color: theme['text']?.withOpacity(0.7))),
+                        decoration: InputDecoration(labelText: L10n.profileLabel(context), labelStyle: TextStyle(color: theme['text']?.withOpacity(0.7))),
                         value: ensureValidDropdownValue(_newUserPerfilId, perfilesCatalogo.map((p) => p.idPerfil).toList()),
                         dropdownColor: theme['card'],
                         items: perfilesCatalogo.map((p) => DropdownMenuItem<int>(
@@ -353,12 +355,12 @@ await _supabase
                           child: Text(p.Nombre, style: TextStyle(color: theme['text']), overflow: TextOverflow.ellipsis),
                         )).toList(),
                         onChanged: (val) => setStateDialog(() => _newUserPerfilId = val),
-                        validator: (v) => v == null ? 'Selecciona un perfil' : null,
+                        validator: (v) => v == null ? L10n.selectProfileError(context) : null,
                       ),
                       const SizedBox(height: 16),
                       DropdownButtonFormField<int>(
                         isExpanded: true, 
-                        decoration: InputDecoration(labelText: 'Grado', labelStyle: TextStyle(color: theme['text']?.withOpacity(0.7))),
+                        decoration: InputDecoration(labelText: L10n.gradeLabel(context), labelStyle: TextStyle(color: theme['text']?.withOpacity(0.7))),
                         value: ensureValidDropdownValue(_newUserGradoId, gradosDisponibles.map((g) => g.idGrado).toList()),
                         dropdownColor: theme['card'],
                         items: gradosDisponibles.map((g) => DropdownMenuItem<int>(
@@ -366,7 +368,7 @@ await _supabase
                           child: Text(g.Descripcion, style: TextStyle(color: theme['text']), overflow: TextOverflow.ellipsis),
                         )).toList(),
                         onChanged: (val) => setStateDialog(() => _newUserGradoId = val),
-                        validator: (v) => v == null ? 'Selecciona un grado' : null,
+                        validator: (v) => v == null ? L10n.selectGradeError(context) : null,
                       ),
                     ],
                   ),
@@ -379,7 +381,7 @@ await _supabase
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(backgroundColor: theme['accent']),
-                  child: _isLoading ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Text('Registrar', style: TextStyle(color: Colors.white)),
+                  child: _isLoading ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : Text(L10n.registerButton(context), style: const TextStyle(color: Colors.white)),
                   onPressed: _isLoading ? null : () async {
                     if (_newUserFormKey.currentState!.validate()) {
                       setState(() => _isLoading = true);
@@ -430,7 +432,7 @@ await _supabase
                           });
                         }
                       } catch (e) {
-
+                         // Autenticación fallida o error de DB
                         _showErrorDialog('Error al Crear Miembro', e.toString());
                       } finally {
                         if (mounted) setState(() => _isLoading = false);
@@ -489,7 +491,7 @@ await _supabase
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Editar Datos Personales', style: TextStyle(color: theme['text'], fontWeight: FontWeight.bold, fontSize: 16)),
+                    Text(L10n.editPersonalTitle(context), style: TextStyle(color: theme['text'], fontWeight: FontWeight.bold, fontSize: 16)),
                     Text(widget.selectedProfile?.LogiaNombre ?? 'Logia No Seleccionada', style: TextStyle(color: theme['text']?.withOpacity(0.7), fontSize: 12)),
                   ],
                 ),
@@ -510,17 +512,17 @@ await _supabase
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      _buildTextField(_emailController, 'Correo Electrónico', theme, keyboardType: TextInputType.emailAddress),
-                      _buildTextField(_phoneController, 'Teléfono', theme, keyboardType: TextInputType.phone),
-                      _buildTextField(_dobController, 'Fecha de Nacimiento (YYYY-MM-DD)', theme, keyboardType: TextInputType.datetime),
-                      _buildTextField(_addressController, 'Dirección', theme),
+                      _buildTextField(_emailController, L10n.emailLabel(context), theme, keyboardType: TextInputType.emailAddress),
+                      _buildTextField(_phoneController, L10n.phoneLabel(context), theme, keyboardType: TextInputType.phone),
+                      _buildTextField(_dobController, L10n.dobLabel(context), theme, keyboardType: TextInputType.datetime),
+                      _buildTextField(_addressController, L10n.addressLabel(context), theme),
                       
                       const SizedBox(height: 20),
 
                       ElevatedButton.icon(
                         onPressed: _isLoading ? null : _updatePersonalInfo,
                         icon: _isLoading ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : const Icon(Icons.save, color: Colors.white),
-                        label: Text(_isLoading ? 'Guardando...' : 'Guardar Datos Personales', style: const TextStyle(color: Colors.white)),
+                        label: Text(_isLoading ? L10n.savingLabel(context) : L10n.savePersonalData(context), style: const TextStyle(color: Colors.white)),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: theme['accent'],
                           padding: const EdgeInsets.symmetric(vertical: 15),
@@ -533,7 +535,7 @@ await _supabase
                       OutlinedButton.icon(
                         onPressed: _isLoading ? null : () => _showChangePasswordDialog(theme),
                         icon: const Icon(Icons.lock_open),
-                        label: const Text('Cambiar Contraseña'),
+                        label: Text(L10n.changePasswordTitle(context)),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: theme['accent'],
                           side: BorderSide(color: theme['accent']!),
@@ -544,7 +546,7 @@ await _supabase
 
                       const SizedBox(height: 20),
                       Text(
-                        '**Nota:** La foto de perfil se actualiza desde el Home.', 
+                        L10n.photoNote(context), 
                         textAlign: TextAlign.center, 
                         style: TextStyle(color: theme['text']?.withOpacity(0.6), fontSize: 12)
                       ),
@@ -579,8 +581,8 @@ await _supabase
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Herramientas de Administración', style: TextStyle(color: theme['text'], fontWeight: FontWeight.bold, fontSize: 16)),
-                Text('Gestión de perfiles, logias y grados', style: TextStyle(color: theme['text']?.withOpacity(0.7), fontSize: 12)),
+                Text(L10n.adminToolsTitle(context), style: TextStyle(color: theme['text'], fontWeight: FontWeight.bold, fontSize: 16)),
+                Text(L10n.adminToolsSub(context), style: TextStyle(color: theme['text']?.withOpacity(0.7), fontSize: 12)),
               ],
             ),
           ),
@@ -606,22 +608,22 @@ await _supabase
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               child: Padding(
                 padding: const EdgeInsets.all(20.0),
-                child: Column(
+                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text("Asignar/Actualizar Rol de Usuario", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: theme['text'])),
+                    Text(L10n.assignRoleTitle(context), style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: theme['text'])),
                     const SizedBox(height: 10),
           
                     FutureBuilder<List<Map<String, dynamic>>>(
                       future: _usersFuture,
                       builder: (context, snapshot) {
                         if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
-                        if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) return const Text('No hay usuarios para mostrar.');
+                        if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) return Text(L10n.isEn(context) ? 'No users to show.' : 'No hay usuarios para mostrar.');
                         
                         final users = snapshot.data!;
                         return DropdownButtonFormField<int>(
                           isExpanded: true, 
-                          decoration: InputDecoration(labelText: 'Usuario a Editar', labelStyle: TextStyle(color: theme['text']?.withOpacity(0.7))),
+                          decoration: InputDecoration(labelText: L10n.userToEditLabel(context), labelStyle: TextStyle(color: theme['text']?.withOpacity(0.7))),
                           value: _selectedUserToEdit,
                           dropdownColor: theme['card'],
                           items: users.map((user) => DropdownMenuItem<int>(
@@ -650,7 +652,7 @@ await _supabase
           
                     DropdownButtonFormField<int>(
                       isExpanded: true,
-                      decoration: InputDecoration(labelText: 'Nuevo Perfil', labelStyle: TextStyle(color: theme['text']?.withOpacity(0.7))),
+                      decoration: InputDecoration(labelText: L10n.newProfileLabel(context), labelStyle: TextStyle(color: theme['text']?.withOpacity(0.7))),
                       value: ensureValidDropdownValue(_selectedNewProfileId, profilesDisponibles.map((p) => p.idPerfil).toList()),
                       dropdownColor: theme['card'],
                       items: profilesDisponibles.map((p) => DropdownMenuItem<int>( // Usamos el catálogo completo
@@ -668,7 +670,7 @@ await _supabase
           
                     DropdownButtonFormField<int>(
                       isExpanded: true, 
-                      decoration: InputDecoration(labelText: 'Nuevo Grado', labelStyle: TextStyle(color: theme['text']?.withOpacity(0.7))),
+                      decoration: InputDecoration(labelText: L10n.newGradeLabel(context), labelStyle: TextStyle(color: theme['text']?.withOpacity(0.7))),
                       value: ensureValidDropdownValue(_selectedNewGrado, gradosFiltrados.map((g) => g.idGrado).toList()),
                       dropdownColor: theme['card'],
                       items: gradosFiltrados.map((g) => DropdownMenuItem<int>(
@@ -682,7 +684,7 @@ await _supabase
                     ElevatedButton.icon(
                       onPressed: _isLoading ? null : _callAdminSp,
                       icon: _isLoading ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : const Icon(Icons.security_update_good, color: Colors.white),
-                      label: Text(_isLoading ? 'Ejecutando...' : 'Asignar Rol (SP 8)', style: const TextStyle(color: Colors.white)),
+                      label: Text(_isLoading ? L10n.isEn(context) ? 'Executing...' : 'Ejecutando...' : L10n.assignRoleButton(context), style: const TextStyle(color: Colors.white)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: theme['accent'],
                         padding: const EdgeInsets.symmetric(vertical: 15),
@@ -693,7 +695,7 @@ await _supabase
                     OutlinedButton.icon(
                       onPressed: () => _showAddUserDialog(theme),
                       icon: const Icon(Icons.person_add),
-                      label: const Text('Registrar Nuevo Usuario'),
+                      label: Text(L10n.registerNewUserButton(context)),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: theme['accent'],
                         side: BorderSide(color: theme['accent']!),
@@ -715,10 +717,11 @@ await _supabase
     if (_canAdmin) {
       return DefaultTabController(
         length: 2,
+        initialIndex: widget.initialTab,
         child: Scaffold(
           backgroundColor: theme['bg'],
           appBar: AppBar(
-            title: Text('Editar Perfil / Admin', style: TextStyle(color: theme['text'])),
+            title: Text(L10n.editAdminTitle(context), style: TextStyle(color: theme['text'])),
             backgroundColor: theme['bg'],
             elevation: 0,               
             iconTheme: IconThemeData(color: theme['text']),
@@ -726,9 +729,9 @@ await _supabase
               labelColor: theme['accent'],
               unselectedLabelColor: theme['text']?.withOpacity(0.7),
               indicatorColor: theme['accent'],
-              tabs: const [
-                Tab(icon: Icon(Icons.person), text: "Mis Datos"),
-                Tab(icon: Icon(Icons.admin_panel_settings), text: "Admin Tools"),
+              tabs: [
+                Tab(icon: const Icon(Icons.person), text: L10n.personalDataTab(context)),
+                Tab(icon: const Icon(Icons.admin_panel_settings), text: L10n.adminToolsTab(context)),
               ],
             ),
           ),
@@ -746,7 +749,7 @@ await _supabase
       return Scaffold(
         backgroundColor: theme['bg'],
         appBar: AppBar(
-          title: Text('Editar Mi Perfil', style: TextStyle(color: theme['text'])),
+          title: Text(L10n.editProfileTitle(context), style: TextStyle(color: theme['text'])),
           backgroundColor: theme['bg'], 
           elevation: 0,                
           iconTheme: IconThemeData(color: theme['text']),

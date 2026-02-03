@@ -8,9 +8,9 @@ import 'package:dio/dio.dart' as dio;
 import 'package:milogia/config/auth_config.dart';
 import '../models/user_model.dart';
 import 'app_drawer.dart';
-import 'app_drawer.dart';
 import 'documents_screen.dart';
 import 'package:cunning_document_scanner/cunning_document_scanner.dart';
+import 'package:milogia/config/l10n.dart';
 
 class RadioCreateScreen extends StatefulWidget {
   final RootModel root;
@@ -102,7 +102,7 @@ class _RadioCreateScreenState extends State<RadioCreateScreen> {
     } catch (e) {
       debugPrint('Error al escanear: $e');
       if (mounted) {
-         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error al acceder al scanner: $e')));
+         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${L10n.scanErrorMsg(context)}$e')));
       }
     }
   }
@@ -112,9 +112,9 @@ class _RadioCreateScreenState extends State<RadioCreateScreen> {
     
     final userUuid = widget.root.user.authUuid;
     if (userUuid == null) {
-      if (mounted) {
+       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Error: No se encontró el UUID del usuario. Por favor, vuelve a iniciar sesión.')),
+          SnackBar(content: Text(L10n.userUuidNotFound(context))),
         );
       }
       return;
@@ -128,8 +128,8 @@ class _RadioCreateScreenState extends State<RadioCreateScreen> {
       // 1. Subir a Storage mediante una Edge Function (para saltar RLS)
       if (_attachment != null) {
         final bytes = _attachment!.bytes ?? (_attachment!.path != null ? await File(_attachment!.path!).readAsBytes() : null);
-        if (bytes == null) {
-          throw Exception('No se pudo leer el contenido del archivo.');
+         if (bytes == null) {
+          throw Exception(L10n.fileReadError(context));
         }
         
         final functionUrl = '$supabaseUrl/functions/v1/upload-radio';
@@ -152,9 +152,9 @@ class _RadioCreateScreenState extends State<RadioCreateScreen> {
         );
 
         if (response.statusCode == 200) {
-          publicUrl = response.data['publicUrl'];
+           publicUrl = response.data['publicUrl'];
         } else {
-          throw Exception('Error al subir archivo: ${response.data['error']}');
+          throw Exception('${L10n.uploadFileError(context)}: ${response.data['error']}');
         }
       }
 
@@ -185,10 +185,10 @@ class _RadioCreateScreenState extends State<RadioCreateScreen> {
         body: {'idradio': radioId},
       );
 
-      if (mounted) {
+       if (mounted) {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Radio emitido y notificado correctamente')),
+          SnackBar(content: Text(L10n.radioEmittedSuccess(context))),
         );
         // Navegamos a DocumentsScreen para ver el resultado, usando pushReplacement porque el stack estaba vacío (abierto desde Drawer con replacement)
         Navigator.pushReplacement(
@@ -215,10 +215,10 @@ class _RadioCreateScreenState extends State<RadioCreateScreen> {
   Widget build(BuildContext context) {
     final theme = _getThemeColors();
     
-    return Scaffold(
+     return Scaffold(
       backgroundColor: theme['bg'],
       appBar: AppBar(
-        title: const Text('Emitir Nuevo Radio'),
+        title: Text(L10n.emitRadioTitle(context)),
         backgroundColor: theme['bg'],
         foregroundColor: theme['text'],
         elevation: 0,
@@ -245,25 +245,25 @@ class _RadioCreateScreenState extends State<RadioCreateScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
-                            children: [
+                             children: [
                               Icon(Icons.edit_note, color: theme['accent']),
                               const SizedBox(width: 8),
-                              Text('1. Información General', style: TextStyle(color: theme['text'], fontSize: 16, fontWeight: FontWeight.bold)),
+                              Text(L10n.generalInfoTitle(context), style: TextStyle(color: theme['text'], fontSize: 16, fontWeight: FontWeight.bold)),
                             ],
                           ),
                           const Divider(),
                           const SizedBox(height: 10),
-                          _buildTextField(
+                           _buildTextField(
                             controller: _titleController,
-                            label: 'Título del Radio',
+                            label: L10n.radioTitleLabel(context),
                             icon: Icons.title,
                             theme: theme,
-                            validator: (v) => v!.isEmpty ? 'Campo requerido' : null,
+                            validator: (v) => v!.isEmpty ? L10n.requiredField(context) : null,
                           ),
                           const SizedBox(height: 15),
-                          _buildTextField(
+                           _buildTextField(
                             controller: _descriptionController,
-                            label: 'Descripción / Mensaje',
+                            label: L10n.radioDescriptionLabel(context),
                             icon: Icons.description,
                             theme: theme,
                             maxLines: 3,
@@ -285,35 +285,35 @@ class _RadioCreateScreenState extends State<RadioCreateScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
-                            children: [
+                             children: [
                               Icon(Icons.settings_suggest, color: theme['accent']),
                               const SizedBox(width: 8),
-                              Text('2. Configuración', style: TextStyle(color: theme['text'], fontSize: 16, fontWeight: FontWeight.bold)),
+                              Text(L10n.configurationTitle(context), style: TextStyle(color: theme['text'], fontSize: 16, fontWeight: FontWeight.bold)),
                             ],
                           ),
                           const Divider(),
                           const SizedBox(height: 10),
                           DropdownButtonFormField<String>(
-                            value: _periodicity,
+                             value: _periodicity,
                             dropdownColor: theme['card'],
                             style: TextStyle(color: theme['text']),
-                            decoration: _inputDecoration('Periodicidad', Icons.repeat, theme),
+                            decoration: _inputDecoration(L10n.periodicityLabel(context), Icons.repeat, theme),
                             items: [
-                              DropdownMenuItem(value: 'once', child: Text('Una sola vez', style: TextStyle(color: theme['text']))),
-                              DropdownMenuItem(value: 'daily', child: Text('Diario', style: TextStyle(color: theme['text']))),
-                              DropdownMenuItem(value: 'weekly', child: Text('Semanal', style: TextStyle(color: theme['text']))),
-                              DropdownMenuItem(value: 'monthly', child: Text('Mensual', style: TextStyle(color: theme['text']))),
+                              DropdownMenuItem(value: 'once', child: Text(L10n.periodicityOnce(context), style: TextStyle(color: theme['text']))),
+                              DropdownMenuItem(value: 'daily', child: Text(L10n.periodicityDaily(context), style: TextStyle(color: theme['text']))),
+                              DropdownMenuItem(value: 'weekly', child: Text(L10n.periodicityWeekly(context), style: TextStyle(color: theme['text']))),
+                              DropdownMenuItem(value: 'monthly', child: Text(L10n.periodicityMonthly(context), style: TextStyle(color: theme['text']))),
                             ],
                             onChanged: (v) => setState(() => _periodicity = v!),
                           ),
                           const SizedBox(height: 15),
                           InkWell(
-                            onTap: _selectDate,
+                             onTap: _selectDate,
                             child: InputDecorator(
-                              decoration: _inputDecoration('Válido hasta', Icons.event, theme),
+                              decoration: _inputDecoration(L10n.validUntilLabel(context), Icons.event, theme),
                               child: Text(
                                 _validUntil == null 
-                                  ? 'Seleccionar fecha (opcional)' 
+                                  ? L10n.selectDateOptional(context) 
                                   : DateFormat('dd/MM/yyyy').format(_validUntil!),
                                 style: TextStyle(color: theme['text']),
                               ),
@@ -321,15 +321,23 @@ class _RadioCreateScreenState extends State<RadioCreateScreen> {
                           ),
                           const SizedBox(height: 15),
                           DropdownButtonFormField<String>(
-                            value: _targetAudience,
+                             value: _targetAudience,
                             dropdownColor: theme['card'],
                             style: TextStyle(color: theme['text']),
-                            decoration: _inputDecoration('Dirigido a', Icons.public, theme),
+                            decoration: _inputDecoration(L10n.targetAudienceLabel(context), Icons.public, theme),
                             items: [
-                              DropdownMenuItem(value: 'own_lodge', child: Text('Solo mi Logia', style: TextStyle(color: theme['text']))),
-                              DropdownMenuItem(value: 'all_lodges', child: Text('Todas las Logias Global', style: TextStyle(color: theme['text']))),
-                              if (widget.selectedProfile.esGranLogia)
-                                DropdownMenuItem(value: 'subordinate_lodges', child: Text('Logias Subordinadas', style: TextStyle(color: theme['text']))),
+                              // 1. Own Lodge / Mi Logia (Available to everyone)
+                              DropdownMenuItem(value: 'own_lodge', child: Text(L10n.audienceOwnLodge(context), style: TextStyle(color: theme['text']))),
+                              
+                              // 2. Logic for Secretary (Profile 5) -> Can emit to "My Grand Lodge"
+                              if (widget.selectedProfile.idPerfil == 5)
+                                DropdownMenuItem(value: 'grand_lodge', child: Text("Mi Gran Logia", style: TextStyle(color: theme['text']))),
+
+                              // 3. Logic for Grand Lodge -> Can emit to Subordinates & Other GLs
+                              if (widget.selectedProfile.esGranLogia) ...[
+                                DropdownMenuItem(value: 'subordinate_lodges', child: Text(L10n.audienceSubordinateLodges(context), style: TextStyle(color: theme['text']))),
+                                DropdownMenuItem(value: 'other_grand_lodges', child: Text("Otras Grandes Logias", style: TextStyle(color: theme['text']))),
+                              ]
                             ],
                             onChanged: (v) => setState(() => _targetAudience = v!),
                           ),
@@ -350,10 +358,10 @@ class _RadioCreateScreenState extends State<RadioCreateScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
-                            children: [
+                             children: [
                               Icon(Icons.attach_file, color: theme['accent']),
                               const SizedBox(width: 8),
-                              Text('3. Adjuntos (Opcional)', style: TextStyle(color: theme['text'], fontSize: 16, fontWeight: FontWeight.bold)),
+                              Text(L10n.attachmentsTitle(context), style: TextStyle(color: theme['text'], fontSize: 16, fontWeight: FontWeight.bold)),
                             ],
                           ),
                           const Divider(),
@@ -362,10 +370,10 @@ class _RadioCreateScreenState extends State<RadioCreateScreen> {
                             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                             children: [
                               OutlinedButton.icon(
-                                onPressed: _pickFile,
+                                 onPressed: _pickFile,
                                 icon: Icon(Icons.upload_file, color: theme['accent']),
                                 label: Text(
-                                  _attachment == null ? 'Subir Archivo' : 'Cambiar',
+                                  _attachment == null ? L10n.uploadFileButton(context) : L10n.changeFileButton(context),
                                   style: TextStyle(color: theme['text']),
                                 ),
                                 style: OutlinedButton.styleFrom(
@@ -374,10 +382,10 @@ class _RadioCreateScreenState extends State<RadioCreateScreen> {
                                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                                 ),
                               ),
-                              ElevatedButton.icon(
+                               ElevatedButton.icon(
                                 onPressed: _scanDocument,
                                 icon: const Icon(Icons.camera_alt, color: Colors.white),
-                                label: const Text('Escanear', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                                label: Text(L10n.scanButton(context), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: theme['accent'],
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -444,12 +452,12 @@ class _RadioCreateScreenState extends State<RadioCreateScreen> {
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
+                           children: [
                             const Icon(Icons.send_rounded),
                             const SizedBox(width: 10),
-                            const Text(
-                              'EMITIR RADIO',
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                            Text(
+                              L10n.emitRadioButton(context),
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                             ),
                           ],
                         ),

@@ -10,6 +10,7 @@ import 'package:local_auth_android/local_auth_android.dart'; // Importación cla
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../models/user_model.dart';
 import '../config/auth_config.dart';
+import '../config/l10n.dart';
 import 'home_screen.dart';
 import 'package:geolocator/geolocator.dart';
 
@@ -65,13 +66,13 @@ class _LoginScreenState extends State<LoginScreen> {
       final bool isDeviceSupported = await _localAuth.isDeviceSupported();
 
       if (!canCheckBiometrics || !isDeviceSupported) {
-        _showSnackbar('El dispositivo no soporta autenticación biométrica.', isError: true);
+        _showSnackbar(L10n.biometricNoSupport(context), isError: true);
         return;
       }
 
       // 2. Iniciar el diálogo de autenticación
       authenticated = await _localAuth.authenticate(
-        localizedReason: 'Usa tu huella o rostro para ingresar',
+        localizedReason: L10n.biometricReason(context),
         options: const AuthenticationOptions(
           stickyAuth: true, // Mantiene el diálogo hasta que se complete
           biometricOnly: true, // Solo permite huella/rostro, no PIN del dispositivo
@@ -79,7 +80,7 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       if (authenticated) {
-        _showSnackbar('Autenticación exitosa. Cargando datos...');
+        _showSnackbar(L10n.authSuccess(context));
         // **NUEVO: Recuperar y usar credenciales guardadas**
         final email = await _storage.read(key: 'email');
         final password = await _storage.read(key: 'password');
@@ -90,11 +91,11 @@ class _LoginScreenState extends State<LoginScreen> {
           _passwordController.text = password;
           await _login();
         } else {
-          _showSnackbar('No se encontraron credenciales guardadas. Por favor, inicia sesión manualmente una vez.', isError: true);
+          _showSnackbar(L10n.credentialsNotFound(context), isError: true);
         }
       }
     } catch (e) {
-      _showSnackbar('Error de biometría: ${e.toString()}', isError: true);
+      _showSnackbar('${L10n.biometricError(context)}: ${e.toString()}', isError: true);
     }
   }
 
@@ -132,7 +133,7 @@ class _LoginScreenState extends State<LoginScreen> {
       );
       print(authResponse);
       if (authResponse.session == null) {
-        throw const AuthException('Sesión no disponible después de la autenticación. Credenciales inválidas.');
+        throw AuthException(L10n.sessionUnavailable(context));
       }
       accessToken = authResponse.session!.accessToken;
       print(accessToken);
@@ -200,7 +201,18 @@ class _LoginScreenState extends State<LoginScreen> {
             final root = RootModel.fromJson(processedDecodedResponse);
             _rootModel = root;
 
-            final profiles = root.user.perfiles_opciones;
+            // Filtro Anti-Duplicados: "Super Usuario" vs "Superusuario"
+            final profilesRaw = root.user.perfiles_opciones;
+            final profilesMap = <String, PerfilOpcion>{};
+            for (var p in profilesRaw) {
+               // Normalizamos creando una llave única. 
+               // Usamos idLogia e idPerfil, ignorando variaciones leves en el nombre del perfil.
+               final key = '${p.idLogia}_${p.idPerfil}';
+               if (!profilesMap.containsKey(key)) {
+                 profilesMap[key] = p;
+               }
+            }
+            final profiles = profilesMap.values.toList();
 
             if (profiles.length > 1) {
               if (mounted) _showProfileSelectionDialog(profiles);
@@ -209,7 +221,7 @@ class _LoginScreenState extends State<LoginScreen> {
             } else {
               // Si no hay perfiles, es un error de configuración
               await _deleteCredentials();
-              if (mounted) _showSnackbar('El usuario no tiene perfiles asignados, pero la sesión es válida.', isError: true);
+              if (mounted) _showSnackbar(L10n.noProfilesAssigned(context), isError: true);
               print('Email: $email, Password: $password, Payload: $payload');
               print('Response Body: ${resp.body}');
               print('Profiles List: $profiles');
@@ -217,37 +229,37 @@ class _LoginScreenState extends State<LoginScreen> {
             return;
           }
 
-          _showSnackbar('Respuesta de servidor válida, pero no se encontró la clave "user".', isError: true);
+           _showSnackbar(L10n.userKeyNotFound(context), isError: true);
           return;
         } else {
-          _showSnackbar('Formato de respuesta de la RPC inesperado.', isError: true);
+          _showSnackbar(L10n.rpcFormatError(context), isError: true);
           return;
         }
       } else {
-        final errorBody = json.decode(resp.body);
+         final errorBody = json.decode(resp.body);
         final errorMessage = errorBody['message'] ?? 'Error desconocido';
-        _showSnackbar('Error al obtener datos adicionales (Código: ${resp.statusCode}, Mensaje: $errorMessage)', isError: true);
+        _showSnackbar('${L10n.extraDataError(context)}Code: ${resp.statusCode}, Msg: $errorMessage', isError: true);
         
       }
     } on AuthException catch (e) {
-      String errorMessage = e.message.contains('Invalid login credentials') == true
-          ? 'Usuario o contraseña incorrectos.'
-          : 'Error de autenticación: ${e.message}';
+       String errorMessage = e.message.contains('Invalid login credentials') == true
+          ? L10n.loginCredentialsError(context)
+          : '${L10n.authGenError(context)}${e.message}';
       // Si las credenciales son inválidas, las borramos del almacenamiento seguro
       await _deleteCredentials();
       _showSnackbar(errorMessage, isError: true);
       print('Error de autenticación: ${e.message}');
-    } catch (e) {
-      _showSnackbar('Ocurrió un error inesperado. ${e.toString()}', isError: true);
+     } catch (e) {
+      _showSnackbar('${L10n.unexpectedError(context)}${e.toString()}', isError: true);
       //print ('Ocurrió un error inesperado. ${e.toString()}');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  void _showProfileSelectionDialog(List<PerfilOpcion> profiles) {
+   void _showProfileSelectionDialog(List<PerfilOpcion> profiles) {
     if (profiles.isEmpty) {
-      _showSnackbar('Inicio de sesión correcto, pero no tienes perfiles asignados.', isError: true);
+      _showSnackbar(L10n.loginSuccessNoProfiles(context), isError: true);
       return;
     }
     _selectedProfile = profiles.first;
@@ -259,19 +271,19 @@ class _LoginScreenState extends State<LoginScreen> {
         return StatefulBuilder(
           builder: (context, setStateSB) {
             return AlertDialog(
-              title: const Text('Selección de Perfil'),
+              title: Text(L10n.profileSelectionTitle(context)),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text('Por favor, selecciona el grupo con el que deseas trabajar:'),
+                  Text(L10n.profileSelectionBody(context)),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<PerfilOpcion>(
                     isExpanded: true,
                     // Asegurar que el valor seleccionado sea válido
                     value: profiles.contains(_selectedProfile) ? _selectedProfile : (profiles.isNotEmpty ? profiles.first : null),
-                    decoration: const InputDecoration(
-                      labelText: 'Grupo / Logia',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      labelText: L10n.groupLabel(context),
+                      border: const OutlineInputBorder(),
                     ),
                     selectedItemBuilder: (BuildContext context) {
                       return profiles.map<Widget>((PerfilOpcion p) {
@@ -310,7 +322,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           _navigateToHome(_selectedProfile!);
                         }
                       : null,
-                  child: const Text('INGRESAR'),
+                  child: Text(L10n.loginButton(context)),
                 ),
               ],
             );
@@ -382,7 +394,7 @@ class _LoginScreenState extends State<LoginScreen> {
                      
                       const SizedBox(height: 10),
                       Text(
-                        'MI LOGIA',
+                        L10n.loginTitle(context),
                         style: TextStyle(
                           color: _secondaryColor,
                           fontSize: 28,
@@ -413,8 +425,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                 controller: _userController,
                                 keyboardType: TextInputType.emailAddress,
                                 decoration: InputDecoration(
-                                  labelText: 'Correo Electrónico',
-                                  hintText: 'ej. nombre@dominio.com',
+                                  labelText: L10n.emailLabel(context),
+                                  hintText: L10n.emailHint(context),
                                   prefixIcon: Icon(Icons.person, color: _secondaryColor),
                                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                                   filled: true,
@@ -423,7 +435,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 style: TextStyle(color: _formTextColor),
                                 validator: (value) {
                                   if (value == null || value.isEmpty || !value.contains('@')) {
-                                    return 'Ingresa un correo electrónico válido';
+                                    return L10n.emailError(context);
                                   }
                                   return null;
                                 },
@@ -433,7 +445,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 controller: _passwordController,
                                 obscureText: _isObscure,
                                 decoration: InputDecoration(
-                                  labelText: 'Contraseña',
+                                  labelText: L10n.passwordLabel(context),
                                   prefixIcon: Icon(Icons.lock, color: _secondaryColor),
                                   suffixIcon: IconButton(
                                     icon: Icon(
@@ -453,7 +465,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 style: TextStyle(color: _formTextColor),
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
-                                    return 'Por favor ingresa tu contraseña';
+                                    return L10n.passwordError(context);
                                   }
                                   return null;
                                 },
@@ -489,7 +501,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                           ),
                                         )
                                       : Text(
-                                          'INGRESAR',
+                                          L10n.loginButton(context),
                                           style: TextStyle(
                                             color: _primaryColor,
                                             fontWeight: FontWeight.bold,
@@ -507,11 +519,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                   color: _secondaryColor,
                                   size: 48,
                                 ),
-                                tooltip: 'Ingresar con huella digital',
+                                tooltip: L10n.fingerprintTooltip(context),
                               ),
-                              const Text(
-                                'Ingresar con huella',
-                                style: TextStyle(color: Colors.white70),
+                              Text(
+                                L10n.fingerprintLabel(context),
+                                style: const TextStyle(color: Colors.white70),
                               ),
                             ],
                           ),

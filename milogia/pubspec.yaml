@@ -26,6 +26,14 @@ dependencies:
   cunning_document_scanner: ^1.2.5
   geolocator: ^13.0.1
   device_info_plus: ^11.3.0
+  google_maps_flutter: ^2.14.0
+  html_editor_enhanced: ^2.6.0
+  signature: ^5.5.0
+  printing: ^5.13.0
+  pdf: ^3.11.0
+  uuid: ^4.5.1
+  flutter_localizations:
+    sdk: flutter
 
 dev_dependencies:
   flutter_test:

@@ -520,6 +520,7 @@ class ConceptoDetalle {
   String ctaBanco;
   int iddLogia;
   int iddConcepto;
+  bool Activo; // NUEVO
 
   ConceptoDetalle({
     required this.Costo,
@@ -527,6 +528,7 @@ class ConceptoDetalle {
     required this.ctaBanco,
     required this.iddLogia,
     required this.iddConcepto,
+    required this.Activo,
   });
 
   factory ConceptoDetalle.fromJson(Map<String, dynamic> json) => ConceptoDetalle(
@@ -535,6 +537,7 @@ class ConceptoDetalle {
         ctaBanco: json['ctaBanco'] ?? "",
         iddLogia: json['iddLogia'] ?? 0,
         iddConcepto: json['iddConcepto'] ?? 0,
+        Activo: json['Activo'] ?? true, // NUEVO
       );
 
   Map<String, dynamic> toJson() => {
@@ -543,6 +546,7 @@ class ConceptoDetalle {
         'ctaBanco': ctaBanco,
         'iddLogia': iddLogia,
         'iddConcepto': iddConcepto,
+        'Activo': Activo,
       };
 
   void operator [](String other) {}

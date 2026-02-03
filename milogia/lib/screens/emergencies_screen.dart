@@ -9,8 +9,7 @@ import 'package:device_info_plus/device_info_plus.dart';
 
 
 import '../models/user_model.dart';
-//import 'home_screen.dart';
-//import 'emergencies_screen.dart';
+import 'package:milogia/config/l10n.dart';
 
 import '../models/emergency_model.dart';
 import 'app_drawer.dart';
@@ -85,7 +84,9 @@ class _EmergenciesScreenState extends State<EmergenciesScreen> {
   }
 
   bool _hasPermission(int code) {
-    return widget.selectedProfile.permisos.contains(code);
+    // UNRESTRICTED ACCESS requested: "Hacer que los contactos sean visibles para todos los perfiles sin restricción."
+    return true; 
+    // original: return widget.selectedProfile.permisos.contains(code);
   }
 
   
@@ -140,7 +141,7 @@ class _EmergenciesScreenState extends State<EmergenciesScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(contact.idEmergencia == 0 ? 'Contacto agregado.' : 'Contacto actualizado.')));
+            content: Text(contact.idEmergencia == 0 ? L10n.contactAdded(context) : L10n.contactUpdated(context))));
       }
       _refresh();
     } catch (e) {
@@ -160,7 +161,7 @@ class _EmergenciesScreenState extends State<EmergenciesScreen> {
           .eq('idUsuario', widget.root.user.idUsuario);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Contacto eliminado.')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(L10n.contactDeleted(context))));
       }
       _refresh();
     } catch (e) {
@@ -186,7 +187,7 @@ class _EmergenciesScreenState extends State<EmergenciesScreen> {
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) throw 'Permisos de ubicación denegados.';
+        if (permission == LocationPermission.denied) throw L10n.locationPermissionDenied(context);
       }
       
       // 2. Obtener detalles del remitente para la pantalla de emergencia
@@ -234,7 +235,7 @@ class _EmergenciesScreenState extends State<EmergenciesScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Alerta enviada correctamente.'), backgroundColor: Colors.green)
+          SnackBar(content: Text(L10n.alertSentSuccess(context)), backgroundColor: Colors.green)
         );
       }
 
@@ -258,35 +259,35 @@ class _EmergenciesScreenState extends State<EmergenciesScreen> {
       context: context,
       builder: (ctx) {
         return AlertDialog(
-          title: const Text('Solicitud de Auxilio'),
+          title: Text(L10n.assistanceRequestTitle(context)),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               DropdownButtonFormField<String>(
                 value: selectedType,
-                items: ['Médico', 'Mecánico', 'Seguridad', 'Vial', 'Otro']
+                items: [L10n.medHelp(context), L10n.mechHelp(context), L10n.secHelp(context), L10n.vialHelp(context), L10n.otherHelp(context)]
                     .map((t) => DropdownMenuItem(value: t, child: Text(t)))
                     .toList(),
-                onChanged: (v) => selectedType = v ?? 'Otro',
-                decoration: const InputDecoration(labelText: 'Tipo de ayuda'),
+                onChanged: (v) => selectedType = v ?? L10n.otherHelp(context),
+                decoration: InputDecoration(labelText: L10n.assistanceTypeLabel(context)),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: detailsCtrl,
-                decoration: const InputDecoration(labelText: 'Detalles (opcional)', border: OutlineInputBorder()),
+                decoration: InputDecoration(labelText: L10n.detailsOptionalLabel(context), border: const OutlineInputBorder()),
                 maxLines: 2,
               ),
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+            TextButton(onPressed: () => Navigator.pop(ctx), child: Text(L10n.cancelButton(context))),
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
               onPressed: () {
                 Navigator.pop(ctx);
                 _triggerAlert('assistance', details: '${selectedType}: ${detailsCtrl.text}');
               },
-              child: const Text('Enviar Auxilio'),
+              child: Text(L10n.sendAssistanceButton(context)),
             ),
           ],
         );
@@ -316,40 +317,40 @@ class _EmergenciesScreenState extends State<EmergenciesScreen> {
       context: context,
       builder: (ctx) {
         return AlertDialog(
-          title: Text(isEditing ? 'Editar contacto' : 'Nuevo contacto'),
+          title: Text(isEditing ? L10n.editContactTitle(context) : L10n.newContactTitle(context)),
           content: SingleChildScrollView(
             child: Form(
               key: formKey,
               child: Column(mainAxisSize: MainAxisSize.min, children: [
                 TextFormField(
                   controller: nombreCtrl,
-                  decoration: const InputDecoration(labelText: 'Nombre'),
-                  validator: (v) => v == null || v.isEmpty ? 'Requerido' : null,
+                  decoration: InputDecoration(labelText: L10n.nameLabel(context)),
+                  validator: (v) => v == null || v.isEmpty ? L10n.requiredField(context) : null,
                 ),
                 TextFormField(
                   controller: telefonoCtrl,
-                  decoration: const InputDecoration(labelText: 'Teléfono'),
+                  decoration: InputDecoration(labelText: L10n.phoneLabel(context)),
                 ),
                 TextFormField(
                   controller: direccionCtrl,
-                  decoration: const InputDecoration(labelText: 'Dirección'),
+                  decoration: InputDecoration(labelText: L10n.addressLabel(context)),
                 ),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<int>(
                   value: ensureValidDropdownValue(selectedParentezco, widget.root.catalogos.parentezcos.map((p) => p.idParentezco).toList()),
-                  decoration: const InputDecoration(labelText: 'Parentezco'),
+                  decoration: InputDecoration(labelText: L10n.relationshipLabel(context)),
                   items: widget.root.catalogos.parentezcos
                       .map((p) => DropdownMenuItem<int>(value: p.idParentezco, child: Text(p.Descripcion)))
                       .toList(),
                   onChanged: (v) => selectedParentezco = v,
-                  validator: (v) => v == null ? 'Seleccione parentezco' : null,
+                  validator: (v) => v == null ? L10n.selectRelationshipMsg(context) : null,
                 ),
                 const SizedBox(height: 8),
                 StatefulBuilder(
                   builder: (BuildContext context, StateSetter setDialogState) {
                     return Row(
                       children: [
-                        const Text('Beneficiario'),
+                        Text(L10n.beneficiaryLabel(context)),
                         const SizedBox(width: 12),
                         Switch(
                           value: beneficiario,
@@ -369,7 +370,7 @@ class _EmergenciesScreenState extends State<EmergenciesScreen> {
                             // La propiedad 'enabled' ahora se actualiza al cambiar 'beneficiario'
                             enabled: beneficiario,
                             keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(suffixText: '%', labelText: 'Porcentaje'),
+                            decoration: InputDecoration(suffixText: '%', labelText: L10n.percentageLabel(context)),
                             validator: (v) {
                               if (beneficiario) {
                                 final n = int.tryParse(v ?? '');
@@ -387,7 +388,7 @@ class _EmergenciesScreenState extends State<EmergenciesScreen> {
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Cancelar')),
+            TextButton(onPressed: () => Navigator.of(ctx).pop(), child: Text(L10n.cancelButton(context))),
             ElevatedButton(
               onPressed: () {
                 if (!formKey.currentState!.validate()) return;
@@ -405,7 +406,7 @@ class _EmergenciesScreenState extends State<EmergenciesScreen> {
                 Navigator.of(ctx).pop();
                 _addOrUpdateEmergency(newContact);
               },
-              child: Text(isEditing ? 'Guardar' : 'Agregar'),
+              child: Text(isEditing ? L10n.saveButton(context) : L10n.addButton(context)),
             ),
           ],
         );
@@ -438,11 +439,11 @@ class _EmergenciesScreenState extends State<EmergenciesScreen> {
             ],
           ),
           const SizedBox(height: 6),
-          Text('Parentezco: ${_getParentezcoDesc(e.idParentezco)}', style: TextStyle(color: c2.withOpacity(0.9))),
+          Text('${L10n.relationshipPrefix(context)}${_getParentezcoDesc(e.idParentezco)}', style: TextStyle(color: c2.withOpacity(0.9))),
           const SizedBox(height: 4),
-          Text('Tel: ${e.telefono}', style: TextStyle(color: c2.withOpacity(0.9))),
+          Text('${L10n.phoneLabel(context)}: ${e.telefono}', style: TextStyle(color: c2.withOpacity(0.9))),
           const SizedBox(height: 4),
-          Text('Dir: ${e.direccion}', style: TextStyle(color: c2.withOpacity(0.9))),
+          Text('${L10n.addressLabel(context)}: ${e.direccion}', style: TextStyle(color: c2.withOpacity(0.9))),
           if (canEdit || canDelete)
             Row(mainAxisAlignment: MainAxisAlignment.end, children: [
               if (canEdit)
@@ -463,7 +464,7 @@ class _EmergenciesScreenState extends State<EmergenciesScreen> {
 
   String _getParentezcoDesc(int id) {
     final found = widget.root.catalogos.parentezcos.where((p) => p.idParentezco == id);
-    return found.isNotEmpty ? found.first.Descripcion : 'Desconocido';
+    return found.isNotEmpty ? found.first.Descripcion : L10n.unknown(context);
   }
 
   void _confirmDelete(EmergencyModel contact) {
@@ -471,16 +472,16 @@ class _EmergenciesScreenState extends State<EmergenciesScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Confirmar eliminación'),
-        content: Text('Eliminar contacto "${contact.nombre}" ?'),
+        title: Text(L10n.confirmDeleteTitle(context)),
+        content: Text('${L10n.deleteContactConfirmPrefix(context)}${contact.nombre}" ?'),
         actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Cancelar')),
+          TextButton(onPressed: () => Navigator.of(ctx).pop(), child: Text(L10n.cancelButton(context))),
           ElevatedButton(
             onPressed: () {
               Navigator.of(ctx).pop();
               _deleteEmergency(contact.idEmergencia);
             },
-            child: const Text('Eliminar'),
+            child: Text(L10n.deleteButton(context)),
           ),
         ],
       ),
@@ -523,7 +524,7 @@ class _EmergenciesScreenState extends State<EmergenciesScreen> {
     return Scaffold(
       backgroundColor: c1,
       appBar: AppBar(
-        title: Text('Contactos de Emergencia', style: TextStyle(color: c2)),
+        title: Text(L10n.emergenciesTitle(context), style: TextStyle(color: c2)),
         backgroundColor: c1,
         iconTheme: IconThemeData(color: c3),
         elevation: 0,
@@ -574,7 +575,7 @@ class _EmergenciesScreenState extends State<EmergenciesScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Tus contactos de emergencia',
+                          Text(L10n.yourEmergencyContacts(context),
                               style: TextStyle(color: c2, fontWeight: FontWeight.bold, fontSize: 16)),
                         ],
                       ),
@@ -598,25 +599,25 @@ class _EmergenciesScreenState extends State<EmergenciesScreen> {
                         children: [
                           Icon(Icons.info_outline, color: Colors.blue.shade700, size: 20),
                           const SizedBox(width: 8),
-                          const Expanded(
+                          Expanded(
                             child: Text(
-                              'Configuración para Xiaomi/MIUI',
-                              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
+                              L10n.xiaomiSettingsTitle(context),
+                              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
                             ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 4),
-                      const Text(
-                        'Para que la alerta despierte tu equipo, debes activar "Mostrar en pantalla de bloqueo" en la siguiente pantalla.',
-                        style: TextStyle(fontSize: 12),
+                      Text(
+                        L10n.xiaomiSettingsMsg(context),
+                        style: const TextStyle(fontSize: 12),
                       ),
                       Align(
                         alignment: Alignment.centerRight,
                         child: TextButton.icon(
                           onPressed: _openXiaomiSettings,
                           icon: const Icon(Icons.settings_suggest, size: 18),
-                          label: const Text('Configurar Directo'),
+                          label: Text(L10n.configureDirectButton(context)),
                           style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
                         ),
                       ),
@@ -627,11 +628,11 @@ class _EmergenciesScreenState extends State<EmergenciesScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: Row(
                   children: [
-                    Expanded(
+                     Expanded(
                       child: ElevatedButton.icon(
                         onPressed: _isLoading ? null : () => _triggerAlert('panic'),
                         icon: const Icon(Icons.warning, color: Colors.white),
-                        label: const Text('PÁNICO', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        label: Text(L10n.panicButton(context), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.red.shade700,
                           padding: const EdgeInsets.symmetric(vertical: 12),
@@ -644,7 +645,7 @@ class _EmergenciesScreenState extends State<EmergenciesScreen> {
                       child: ElevatedButton.icon(
                         onPressed: _isLoading ? null : _showAssistanceDialog,
                         icon: const Icon(Icons.help_outline, color: Colors.white),
-                        label: const Text('AUXILIO', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        label: Text(L10n.assistanceButton(context), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.orange.shade800,
                           padding: const EdgeInsets.symmetric(vertical: 12),
@@ -661,7 +662,7 @@ class _EmergenciesScreenState extends State<EmergenciesScreen> {
                     ? Center(
                         child: Padding(
                           padding: const EdgeInsets.all(20.0),
-                          child: Text('No tienes contactos de emergencia.',
+                          child: Text(L10n.noEmergencyContacts(context),
                               textAlign: TextAlign.center, style: TextStyle(color: c2, fontSize: 16)),
                         ),
                       )

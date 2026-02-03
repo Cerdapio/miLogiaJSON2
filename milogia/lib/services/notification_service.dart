@@ -5,13 +5,16 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
+import 'dart:convert'; // Para serializar el payload en JSON
 
 import '../models/user_model.dart';
+import 'package:milogia/config/l10n.dart';
 
 import 'package:milogia/screens/panic_alert_screen.dart';
 import 'package:milogia/main.dart'; // Para acceder al navigatorKey
 import 'package:firebase_core/firebase_core.dart'; // NUEVO: Importar Firebase Core
 import 'package:milogia/firebase_options.dart'; // NUEVO: Importar opciones generadas
+import 'package:milogia/config/auth_config.dart'; // Para credentials de Supabase
 // import 'package:audioplayers/audioplayers.dart'; // Para el Alarm Stream (Si se agrega la dependencia)
 
 @pragma('vm:entry-point')
@@ -20,6 +23,19 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  // Inicializar Supabase también para el isolate de background
+  // Es necesario porque NotificationService accede a Supabase.instance
+  try {
+    await Supabase.initialize(
+      url: supabaseUrl,
+      anonKey: supabaseAnonKey,
+      debug: true,
+    );
+   debugPrint("🔥 [BACKGROUND HANDLER] Supabase inicializado correctamente.");
+  } catch (e) {
+    debugPrint("⚠️ [BACKGROUND HANDLER] Supabase ya estaba inicializado o error: $e");
+  }
   
   debugPrint("🔥🔥🔥 [BACKGROUND HANDLER] Manejando mensaje en background: ${message.messageId}");
   debugPrint("🔥 [BACKGROUND HANDLER] Data: ${message.data}");
@@ -61,7 +77,8 @@ void _handlePanicPayload(Map<String, dynamic> data) {
   // 2. NAVEGACIÓN A PANTALLA COMPLETA
   // Si la app ya está abierta, navegamos. Si no, el FullScreenIntent se encargará al abrirse.
   WidgetsBinding.instance.addPostFrameCallback((_) {
-    MyApp.navigatorKey.currentState?.push(
+    // Usamos la key global definida en main.dart
+    navigatorKey.currentState?.push(
       MaterialPageRoute(builder: (context) => PanicAlertScreen(data: data))
     );
   });
@@ -88,17 +105,41 @@ class NotificationService {
       requestBadgePermission: false, 
       requestAlertPermission: false,
     );
-    const InitializationSettings initializationSettings = InitializationSettings(
+    final InitializationSettings initializationSettings = InitializationSettings(
       android: initializationSettingsAndroid,
       iOS: initializationSettingsIOS,
     );
-    await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+    
+    // Configurar callback para cuando se toca la notificación local
+    await flutterLocalNotificationsPlugin.initialize(
+      initializationSettings,
+      onDidReceiveNotificationResponse: (NotificationResponse response) {
+        debugPrint('🔔 [LOCAL] Click en notificación local. Payload: ${response.payload}');
+        if (response.payload != null) {
+          try {
+             // Intentamos decodificar si es JSON
+             final data = jsonDecode(response.payload!);
+             if (data is Map<String, dynamic> && data['type'] == 'PANIC_ALERT') {
+               debugPrint('🚨 [LOCAL] Detectado payload de pánico. Navegando...');
+               _handlePanicPayload(data);
+             }
+          } catch (e) {
+            // Si no es JSON o falla, verificamos si es el string simple 'PANIC_ALERT' (legacy)
+            if (response.payload == 'PANIC_ALERT') {
+               // En este caso no tenemos data, pero intentamos navegar vacío o manejarlo
+               debugPrint('🚨 [LOCAL] Payload simple detectado. Navegando sin data extra...');
+               // _handlePanicPayload({}); // Riesgoso sin data, mejor omitir o pedir recarga
+            }
+          }
+        }
+      },
+    );
 
     // --- NUEVO: Crear Canal de Alerta Crítica para Pánico ---
-    const AndroidNotificationChannel panicChannel = AndroidNotificationChannel(
+    final AndroidNotificationChannel panicChannel = AndroidNotificationChannel(
       'panic_channel_critical', // ID
-      'Alertas Críticas de Pánico', // Nombre
-      description: 'Este canal se usa para alertas de emergencia vitales.',
+      L10n.panicChannel(), // Nombre
+      description: L10n.panicChannelDesc(),
       importance: Importance.max,
       playSound: false, // Lo manejamos nosotros manualmente para bypass silencio
       enableVibration: true,
@@ -148,7 +189,9 @@ class NotificationService {
       
       if (message.data['type'] == 'PANIC_ALERT') {
         debugPrint('🚨 [FOREGROUND] ¡ALERTA DE PÁNICO DETECTADA!');
-        _handlePanicPayload(message.data);
+        // Solo mostramos la notificación. La navegación automática la decide main.dart
+        // si es una alerta crítica.
+        _showPanicFullScreenNotification(message.data);
       } else if (message.notification != null) {
         debugPrint('ℹ️ [FOREGROUND] Mostrando notificación remota normal');
         _showRemoteNotification(message);
@@ -163,8 +206,9 @@ class NotificationService {
        debugPrint('🔔 [OPENED APP] App abierta desde notificación');
        debugPrint('🔔 [OPENED APP] Data: ${message.data}');
        if (message.data['type'] == 'PANIC_ALERT') {
-         debugPrint('🚨 [OPENED APP] Navegando a pantalla de pánico...');
-         _handlePanicPayload(message.data);
+         // La navegación desde background la maneja main.dart
+         // debugPrint('🚨 [OPENED APP] Navegando a pantalla de pánico...');
+         // _handlePanicPayload(message.data);
        }
     });
 
@@ -174,11 +218,13 @@ class NotificationService {
         debugPrint('💀 [TERMINATED] App abierta desde estado cerrado por notificación');
         debugPrint('💀 [TERMINATED] Data: ${message.data}');
         if (message.data['type'] == 'PANIC_ALERT') {
+          // La navegación inicial la maneja main.dart para evitar race conditions
+          /*
           debugPrint('🚨 [TERMINATED] Navegando a pantalla de pánico tras delay...');
-          // Pequeño delay para asegurar que el navigatorKey esté listo
           Future.delayed(const Duration(milliseconds: 500), () {
             _handlePanicPayload(message.data);
           });
+          */
         }
       } else {
         debugPrint('💀 [TERMINATED] No hay mensaje inicial');
@@ -259,8 +305,8 @@ class NotificationService {
         NotificationDetails(
           android: AndroidNotificationDetails(
             'default_channel_id', // Canal por defecto para mensajes FCM
-            'Avisos Generales',
-            channelDescription: 'Notificaciones generales de la aplicación',
+            L10n.generalChannel(),
+            channelDescription: L10n.generalChannelDesc(),
             icon: '@mipmap/ic_notification',
             importance: Importance.max,
             priority: Priority.high,
@@ -292,8 +338,8 @@ class NotificationService {
           int notificationId = (miembro.idUsuario * 10) + 1;
           _scheduleNotification(
             id: notificationId,
-            title: 'Celebración de Nacimiento',
-            body: 'Hoy festejamos el nacimiento del ${perfilEnLogia.Tratamiento} ${miembro.Nombre}',
+            title: L10n.birthdayTitle(),
+            body: L10n.birthdayToday(perfilEnLogia.Tratamiento, miembro.Nombre),
             scheduledDate: tz.TZDateTime.from(birthdayThisYear, tz.local),
             logiaId: perfilEnLogia.idLogia,
           );
@@ -303,8 +349,8 @@ class NotificationService {
           int notificationId = (miembro.idUsuario * 10) + 2;
           _scheduleNotification(
             id: notificationId,
-            title: 'Próximo Nacimiento',
-            body: 'Mañana se celebra el nacimiento del ${perfilEnLogia.Tratamiento} ${miembro.Nombre}',
+            title: L10n.upcomingBirthdayTitle(),
+            body: L10n.birthdayTomorrow(perfilEnLogia.Tratamiento, miembro.Nombre),
             scheduledDate: tz.TZDateTime.from(dayBeforeBirthday, tz.local),
             logiaId: perfilEnLogia.idLogia,
           );
@@ -323,8 +369,8 @@ class NotificationService {
   }) async {
     final androidDetails = AndroidNotificationDetails(
       'birthday_channel_id',
-      'Notificaciones de Cumpleaños',
-      channelDescription: 'Canal para recordatorios de cumpleaños.',
+      L10n.birthdayChannel(),
+      channelDescription: L10n.birthdayChannelDesc(),
       importance: Importance.max,
       priority: Priority.high,
       icon: '@mipmap/ic_notification', // APUNTAR EXPLÍCITAMENTE A MIPMAP
@@ -362,11 +408,11 @@ class NotificationService {
     
     final androidDetails = AndroidNotificationDetails(
       'panic_channel_critical', // ID del canal de pánico
-      'Alertas Críticas de Pánico',
-      channelDescription: 'Este canal se usa para alertas de emergencia vitales.',
+      L10n.panicChannel(),
+      channelDescription: L10n.panicChannelDesc(),
       importance: Importance.max,
       priority: Priority.high,
-      fullScreenIntent: true, // CLAVE: Lanza la app directamente
+      fullScreenIntent: isPanic, // CLAVE: Solo lanza la app si es pánico real
       category: AndroidNotificationCategory.alarm,
       enableVibration: true,
       icon: '@mipmap/ic_notification',
@@ -384,67 +430,31 @@ class NotificationService {
     
     await flutterLocalNotificationsPlugin.show(
       0, // ID fijo para que solo haya una alerta activa si llegan varias
-      isPanic ? '¡ALERTA DE PÁNICO!' : 'SOLICITUD DE ASISTENCIA',
-      'El $name necesita ayuda inmediata.',
+      isPanic ? L10n.panicAlert() : L10n.assistanceRequest(),
+      L10n.needsHelp(name),
       NotificationDetails(android: androidDetails, iOS: iosDetails),
-      payload: 'PANIC_ALERT', // Para manejar el toque si el intent no salta
+      payload: jsonEncode(data), // SERIALIZAR DATA COMPLETA EN EL PAYLOAD
     );
     
     debugPrint('🚨 [SHOW PANIC] ✅ Notificación mostrada exitosamente');
   }
 
-  /// Simula una alerta de pánico localmente (para pruebas sin backend)
-  Future<void> simulatePanicAlert() async {
-    debugPrint('🧪 [TEST] Simulando alerta de pánico local...');
-    
-    final testData = {
-      'type': 'PANIC_ALERT',
-      'alert_type': 'panic',
-      'sender_name': 'Q:.H:. Juan Pérez',
-      'sender_grade': 'M:.M:.',
-      'sender_lodge': 'Logia Ejemplo #123',
-      'sender_gran_logia': 'Gran Logia de México',
-      'sender_lat': '19.4326',
-      'sender_lon': '-99.1332',
-      'sender_phone': '5512345678',
-      'details': 'Esta es una prueba de alerta de pánico',
-    };
-    
-    debugPrint('🧪 [TEST] Mostrando notificación de pánico...');
-    await _showPanicFullScreenNotification(testData);
-    
-    debugPrint('🧪 [TEST] Navegando a pantalla de pánico...');
-    _handlePanicPayload(testData);
-    
-    debugPrint('🧪 [TEST] ✅ Simulación completada');
-  }
-
-  // --- NUEVA FUNCIÓN PARA PRUEBAS ---
-  /// Muestra una notificación de prueba de inmediato.
-  Future<void> showTestNotification() async {
-    final androidDetails = AndroidNotificationDetails(
-      'birthday_channel_id', // Debe ser el mismo ID de canal que las reales
-      'Notificaciones de Cumpleaños',
-      channelDescription: 'Canal para recordatorios de cumpleaños.',
-      importance: Importance.max,
-      priority: Priority.high,
-      icon: '@mipmap/ic_notification', // APUNTAR EXPLÍCITAMENTE A MIPMAP
-    );
-    final iosDetails = DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: true,
-    );
-    final notificationDetails = NotificationDetails(
-      android: androidDetails,
-      iOS: iosDetails,
-    );
-
-    await flutterLocalNotificationsPlugin.show(
-      999, // Un ID único para la notificación de prueba
-      'Celebración de Nacimiento', // Título real de la notificación
-      'Hoy festejamos el nacimiento del Q:.H:. Juan Pérez', // Cuerpo de ejemplo, como en la notificación real
-      notificationDetails,
-    );
+  /// Sends a notification to the Lodge Secretary about a new document request
+  Future<void> notifySecretaryRequest(int logiaId, String docName, String userName) async {
+    try {
+      debugPrint("🔔 Notifying secretary of logia $logiaId about $docName for $userName");
+      
+      // Note: This requires an Edge Function named 'notify-secretary-request' to be deployed.
+      await _supabase.functions.invoke(
+        'notify-secretary-request', 
+        body: {
+          'logiaId': logiaId, 
+          'docName': docName, 
+          'userName': userName
+        },
+      );
+    } catch (e) {
+      debugPrint("Error sending secretary notification: $e");
+    }
   }
 }
