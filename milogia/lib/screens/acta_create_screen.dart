@@ -1,12 +1,12 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:flutter_quill/flutter_quill.dart' as quill; 
+import 'package:flutter_quill/flutter_quill.dart' as quill;
 import 'package:cryptography/cryptography.dart';
 import 'package:crypto/crypto.dart' as crypto_hash;
 
 import '../models/user_model.dart';
-import '../config/l10n.dart';
+// import '../config/l10n.dart'; // Descomenta esto si lo usas en este archivo
 
 class ActaCreateScreen extends StatefulWidget {
   final RootModel root;
@@ -25,11 +25,11 @@ class ActaCreateScreen extends StatefulWidget {
 class _ActaCreateScreenState extends State<ActaCreateScreen> {
   final _supabase = Supabase.instance.client;
   
-  // Nuevo controlador nativo
+  // Controlador del Editor Nativo
   final quill.QuillController _controller = quill.QuillController.basic();
   
   final TextEditingController _fechaTenidaController = TextEditingController();
-  String _tipoActa = 'Ordinaria';
+  final String _tipoActa = 'Ordinaria';
   int? _idGradoSeleccionado;
   bool _isLoading = false;
 
@@ -40,31 +40,35 @@ class _ActaCreateScreenState extends State<ActaCreateScreen> {
     _idGradoSeleccionado = widget.selectedProfile.idGrado;
   }
 
+  @override
+  void dispose() {
+    _controller.dispose();
+    _fechaTenidaController.dispose();
+    super.dispose();
+  }
+
   Future<void> _guardarActa() async {
     setState(() => _isLoading = true);
     try {
-      print("Paso 1: Extrayendo texto...");
       final String plainText = _controller.document.toPlainText().toLowerCase();
-      if (plainText.trim().isEmpty) throw Exception("El acta está vacía.");
+      if (plainText.trim().isEmpty) throw Exception("El acta no puede estar vacía.");
 
-      print("Paso 2: Generando Delta JSON...");
+      // Generación del Delta (Formato Original)
       final String jsonContent = jsonEncode(_controller.document.toDelta().toJson());
-      
-      print("Paso 3: Preparando Criptografía...");
+
+      // Llave de prueba (Asegúrate de cambiar esto por tu llave real en el futuro)
       final keyBytes = List<int>.generate(32, (i) => i + 1); 
       final secretKey = SecretKey(keyBytes);
 
-      print("Paso 4: Creando Índice de Búsqueda...");
-      final List<String> words = plainText.split(RegExp(r'\W+'))
-          .where((w) => w.length > 3).toSet().toList();
-
+      // Índice de búsqueda
+      final List<String> words = plainText.split(RegExp(r'\W+')).where((w) => w.length > 3).toSet().toList();
       List<String> indiceBusqueda = [];
       for (var word in words) {
         var bytes = utf8.encode(word + base64Encode(keyBytes));
         indiceBusqueda.add(crypto_hash.sha256.convert(bytes).toString());
       }
 
-      print("Paso 5: Encriptando (AES-256-GCM)...");
+      // Cifrado AES-256-GCM
       final algorithm = AesGcm.with256bits();
       final nonce = algorithm.newNonce();
       final secretBox = await algorithm.encrypt(
@@ -73,7 +77,7 @@ class _ActaCreateScreenState extends State<ActaCreateScreen> {
         nonce: nonce,
       );
 
-      print("Paso 6: Guardando en Supabase...");
+      // Guardado en BD
       await _supabase.from('actas').insert({
         'iddLogia': widget.selectedProfile.idLogia,
         'Fecha': DateTime.now().toIso8601String(),
@@ -90,16 +94,11 @@ class _ActaCreateScreenState extends State<ActaCreateScreen> {
         'Activo': true,
       });
 
-      print("Paso 7: ¡Éxito!");
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Acta guardada con éxito")));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Acta cifrada y guardada con éxito.")));
         Navigator.pop(context);
       }
-    } catch (e, stackTrace) {
-      // Esto nos dirá exactamente la línea del error
-      print("FALLÓ EN EL TRY-CATCH: $e");
-      print("TRAZA DEL ERROR: $stackTrace");
-      
+    } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -108,7 +107,7 @@ class _ActaCreateScreenState extends State<ActaCreateScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Filtrado dinámico de grados
+    // 1. Lógica de Filtrado de Grados
     final gradosDisponibles = widget.root.catalogos.grados_catalogo.values
         .expand((lista) => lista)
         .where((g) {
@@ -116,72 +115,99 @@ class _ActaCreateScreenState extends State<ActaCreateScreen> {
       return g.Grupo == widget.selectedProfile.Grupo && g.idGrado <= widget.selectedProfile.idGrado;
     }).toList();
 
+    // 2. Validación segura del Dropdown
+    final int? gradoValido = gradosDisponibles.any((g) => g.idGrado == _idGradoSeleccionado) 
+        ? _idGradoSeleccionado 
+        : (gradosDisponibles.isNotEmpty ? gradosDisponibles.first.idGrado : null);
+
     return Scaffold(
+      backgroundColor: Colors.grey[100], // Fondo sutil para distinguir el editor
       appBar: AppBar(
         title: const Text('Nueva Acta Cifrada'),
-        actions: [IconButton(onPressed: _isLoading ? null : _guardarActa, icon: const Icon(Icons.lock_outline))],
+        actions: [
+          IconButton(
+            onPressed: _isLoading ? null : _guardarActa,
+            // Agregamos un indicador de carga al guardar
+            icon: _isLoading 
+                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) 
+                : const Icon(Icons.lock_outline),
+          )
+        ],
       ),
+      // IMPORTANTE: Column asegura que los widgets de adentro se ordenen de arriba a abajo
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: Column(
+          // SECCIÓN SUPERIOR: Controles
+          Container(
+            color: Colors.white,
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _fechaTenidaController,
-                        decoration: const InputDecoration(labelText: 'Fecha Tenida', border: OutlineInputBorder()),
-                        readOnly: true,
-                        onTap: () async {
-                          DateTime? p = await showDatePicker(context: context, initialDate: DateTime.now(), firstDate: DateTime(2000), lastDate: DateTime(2100));
-                          if (p != null) setState(() => _fechaTenidaController.text = p.toIso8601String().split('T')[0]);
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: DropdownButtonFormField<int>(
-                        value: _idGradoSeleccionado,
-                        decoration: const InputDecoration(labelText: 'Grado del Acta', border: OutlineInputBorder()),
-                        items: gradosDisponibles.map((g) => DropdownMenuItem(value: g.idGrado, child: Text(g.Descripcion))).toList(),
-                        onChanged: (v) => setState(() => _idGradoSeleccionado = v),
-                      ),
-                    ),
-                  ],
+                Expanded(
+                  child: TextFormField(
+                    controller: _fechaTenidaController,
+                    decoration: const InputDecoration(labelText: 'Fecha Tenida', border: OutlineInputBorder()),
+                    readOnly: true,
+                    onTap: () async {
+                      DateTime? p = await showDatePicker(
+                        context: context, 
+                        initialDate: DateTime.now(), 
+                        firstDate: DateTime(2000), 
+                        lastDate: DateTime(2100)
+                      );
+                      if (p != null) setState(() => _fechaTenidaController.text = p.toIso8601String().split('T')[0]);
+                    },
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: DropdownButtonFormField<int>(
+                    value: gradoValido,
+                    decoration: const InputDecoration(labelText: 'Grado del Acta', border: OutlineInputBorder()),
+                    items: gradosDisponibles.isEmpty 
+                        ? [const DropdownMenuItem<int>(value: null, child: Text("Sin grados"))]
+                        : gradosDisponibles.map((g) => DropdownMenuItem<int>(value: g.idGrado, child: Text(g.Descripcion))).toList(),
+                    onChanged: gradosDisponibles.isEmpty ? null : (v) => setState(() => _idGradoSeleccionado = v),
+                  ),
                 ),
               ],
             ),
           ),
-         // 1. Barra de herramientas
-          quill.QuillSimpleToolbar(
-            controller: _controller,
-            // Cambio aquí: config y QuillSimpleToolbarConfig
-            config: const quill.QuillSimpleToolbarConfig(
-               showFontFamily: false,
-               showSearchButton: false,
-               showSubscript: false,
-               showSuperscript: false,
+          
+          const Divider(height: 1, thickness: 1),
+
+          // SECCIÓN MEDIA: Barra de Herramientas Quill
+          Container(
+            color: Colors.white,
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: quill.QuillSimpleToolbar(
+              controller: _controller,
+              config: const quill.QuillSimpleToolbarConfig(
+                // Ocultamos controles que no necesitas para un acta masónica formal
+                showFontFamily: false,
+                showSearchButton: false,
+                showInlineCode: false,
+                showSubscript: false,
+                showSuperscript: false,
+                showColorButton: false,
+                showBackgroundColorButton: false,
+              ),
             ),
           ),
           
-          // 2. Editor
+          const Divider(height: 1, thickness: 1),
+
+          // SECCIÓN INFERIOR: El Editor de Texto
+          // IMPORTANTE: Expanded le dice al editor "Ocupa todo el espacio que sobra hacia abajo"
           Expanded(
             child: Container(
-              margin: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey.shade300),
-                color: Colors.white,
-              ),
-              // Aquí va el editor
+              color: Colors.white, // El lienzo blanco como una hoja de papel
+              padding: const EdgeInsets.all(16.0),
               child: quill.QuillEditor.basic(
                 controller: _controller,
-                // Cambio aquí: config y QuillEditorConfig
                 config: const quill.QuillEditorConfig(
+                  padding: EdgeInsets.zero, // El padding ya lo maneja el Container de arriba
                   autoFocus: false,
-                  expands: true, // ¡La varita mágica para que ocupe todo el espacio!
-                  padding: EdgeInsets.all(8),
                 ),
               ),
             ),
