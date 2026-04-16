@@ -322,21 +322,23 @@ class PerfilOpcion {
   });
 
   // Getter útil para el módulo de actas
- 
-  factory PerfilOpcion.fromJson(Map<String, dynamic> json) => PerfilOpcion(
-        Grupo: json['Grupo'] ?? '',
-        colores: Colores.fromJson(json['colores'] ?? {}),
-        idGrado: json['idGrado'] ?? 0,
-        idLogia: json['idLogia'] ?? 0,
-        idPerfil: json['idPerfil'] ?? 0,
-        Abreviatura: json['Abreviatura'] ?? '',
-        Grado: json['Grado'] ?? 0,
-        GradoNombre: json['GradoNombre'] ?? '',
-        LogiaNombre: json['LogiaNombre'] ?? '',
-        Significado: json['Significado'] ?? '',
-        Tratamiento: json['Tratamiento'] ?? '',
+   factory PerfilOpcion.fromJson(Map<String, dynamic> json) => PerfilOpcion(
+        // Con esta fórmula, no importa si viene como "1" o 1, siempre será int:
+        idLogia: json["idLogia"] != null ? int.tryParse(json["idLogia"].toString()) ?? 0 : 0,
+        LogiaNombre: json["LogiaNombre"]?.toString() ?? '',
+        esGranLogia: json["esGranLogia"] ?? false,
+        idGrado: json["idGrado"] != null ? int.tryParse(json["idGrado"].toString()) ?? 0 : 0,
+        GradoNombre: json["GradoNombre"]?.toString() ?? '',
+        Grupo: json["Grupo"]?.toString() ?? '',
+        Abreviatura: json["Abreviatura"]?.toString() ?? '',
         PerfilNombre: json['PerfilNombre'] ?? '',
-        esGranLogia: json['esGranLogia'] ?? false,
+        // Aquí estaba el causante de la pantalla roja:
+        Grado: json["Grado"] != null ? int.tryParse(json["Grado"].toString()) ?? 0 : 0,
+        Tratamiento: json["Tratamiento"]?.toString() ?? '',
+        Significado: json["Significado"]?.toString() ?? '',
+        idPerfil: json["idPerfil"] != null ? int.tryParse(json["idPerfil"].toString()) ?? 0 : 0,
+        // (Asumiendo que así tienes tu clase Colores)
+        colores: json["colores"] != null ? Colores.fromJson(json["colores"]) : Colores(C1: '', C2: '', C3: '', C4: ''),
       );
   bool get esGradoSimbolico => Grupo == "Grados Simbólicos";
 
@@ -708,13 +710,12 @@ class GradoCatalogo {
         required this.Descripcion,
     });
 
-    // **CORRECCIÓN:** El grupo ahora se pasa como parámetro, no se lee del JSON.
-    factory GradoCatalogo.fromJson(Map<String, dynamic> json, {String grupo = ''}) => GradoCatalogo(
-        Grupo: grupo, // Asignamos el grupo que viene de la clave del mapa.
-        idGrado: json["idGrado"] ?? 0,
-        Descripcion: json["Descripcion"] ?? '',
-    );
 
+factory GradoCatalogo.fromJson(Map<String, dynamic> json, {String grupo = ''}) => GradoCatalogo(
+        Grupo: json["Grupo"]?.toString() ?? grupo, 
+        idGrado: json["idGrado"] != null ? int.tryParse(json["idGrado"].toString()) ?? 0 : 0,
+        Descripcion: json["Descripcion"]?.toString() ?? '',
+    );
     Map<String, dynamic> toJson() => {"Grupo": Grupo, "idGrado": idGrado, "Descripcion": Descripcion};
 }
 
