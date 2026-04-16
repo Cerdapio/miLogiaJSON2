@@ -330,7 +330,7 @@ class PerfilOpcion {
         idLogia: json['idLogia'] ?? 0,
         idPerfil: json['idPerfil'] ?? 0,
         Abreviatura: json['Abreviatura'] ?? '',
-        Grado: json['Grado'] ?? '',
+        Grado: json['Grado'] ?? 0,
         GradoNombre: json['GradoNombre'] ?? '',
         LogiaNombre: json['LogiaNombre'] ?? '',
         Significado: json['Significado'] ?? '',

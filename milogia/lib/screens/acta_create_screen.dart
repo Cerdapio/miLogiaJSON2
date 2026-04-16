@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:quill_html_editor/quill_html_editor.dart';
+import 'package:flutter_quill/flutter_quill.dart' as quill; 
 import 'package:cryptography/cryptography.dart';
 import 'package:crypto/crypto.dart' as crypto_hash;
 
@@ -24,7 +24,9 @@ class ActaCreateScreen extends StatefulWidget {
 
 class _ActaCreateScreenState extends State<ActaCreateScreen> {
   final _supabase = Supabase.instance.client;
-  final QuillEditorController _controller = QuillEditorController();
+  
+  // Nuevo controlador nativo
+  final quill.QuillController _controller = quill.QuillController.basic();
   
   final TextEditingController _fechaTenidaController = TextEditingController();
   String _tipoActa = 'Ordinaria';
@@ -35,24 +37,24 @@ class _ActaCreateScreenState extends State<ActaCreateScreen> {
   void initState() {
     super.initState();
     _fechaTenidaController.text = DateTime.now().toIso8601String().split('T')[0];
-    
-    // Inicialización inteligente del grado según el perfil
     _idGradoSeleccionado = widget.selectedProfile.idGrado;
   }
 
-  // --- LÓGICA CRIPTOGRÁFICA (PILAR 1 Y 2) ---
   Future<void> _guardarActa() async {
     setState(() => _isLoading = true);
     try {
-      String htmlContent = await _controller.getText();
-      if (htmlContent.isEmpty || htmlContent == '<p><br></p>') throw Exception("El acta está vacía.");
+      print("Paso 1: Extrayendo texto...");
+      final String plainText = _controller.document.toPlainText().toLowerCase();
+      if (plainText.trim().isEmpty) throw Exception("El acta está vacía.");
 
-      // 1. Obtención de llave (Simulada, debe venir de tu login seguro)
+      print("Paso 2: Generando Delta JSON...");
+      final String jsonContent = jsonEncode(_controller.document.toDelta().toJson());
+      
+      print("Paso 3: Preparando Criptografía...");
       final keyBytes = List<int>.generate(32, (i) => i + 1); 
       final secretKey = SecretKey(keyBytes);
 
-      // 2. Pilar 2: Índice Ciego para Búsqueda
-      final String plainText = htmlContent.replaceAll(RegExp(r'<[^>]*>'), ' ').toLowerCase();
+      print("Paso 4: Creando Índice de Búsqueda...");
       final List<String> words = plainText.split(RegExp(r'\W+'))
           .where((w) => w.length > 3).toSet().toList();
 
@@ -62,22 +64,22 @@ class _ActaCreateScreenState extends State<ActaCreateScreen> {
         indiceBusqueda.add(crypto_hash.sha256.convert(bytes).toString());
       }
 
-      // 3. Pilar 1: Cifrado AES-256-GCM
+      print("Paso 5: Encriptando (AES-256-GCM)...");
       final algorithm = AesGcm.with256bits();
       final nonce = algorithm.newNonce();
       final secretBox = await algorithm.encrypt(
-        utf8.encode(htmlContent), // Ciframos el HTML puro
+        utf8.encode(jsonContent),
         secretKey: secretKey,
         nonce: nonce,
       );
 
-      // 4. Guardado respetando tu tabla 'actas'
+      print("Paso 6: Guardando en Supabase...");
       await _supabase.from('actas').insert({
         'iddLogia': widget.selectedProfile.idLogia,
-        'Fecha': DateTime.now().toIso8601String(), // Fecha de registro
+        'Fecha': DateTime.now().toIso8601String(),
         'fecha_tenida': _fechaTenidaController.text,
         'Tipo': _tipoActa,
-        'idGrado': _idGradoSeleccionado, // Vital para tus políticas RLS
+        'idGrado': _idGradoSeleccionado,
         'ContenidoJSON': {
           "nonce": base64Encode(nonce),
           "mac": base64Encode(secretBox.mac.bytes),
@@ -88,11 +90,16 @@ class _ActaCreateScreenState extends State<ActaCreateScreen> {
         'Activo': true,
       });
 
+      print("Paso 7: ¡Éxito!");
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Acta guardada con éxito")));
         Navigator.pop(context);
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      // Esto nos dirá exactamente la línea del error
+      print("FALLÓ EN EL TRY-CATCH: $e");
+      print("TRAZA DEL ERROR: $stackTrace");
+      
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -101,16 +108,12 @@ class _ActaCreateScreenState extends State<ActaCreateScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Filtrado dinámico de grados para escalabilidad
-    // Extraemos las listas del Map, las aplanamos y luego filtramos
+    // Filtrado dinámico de grados
     final gradosDisponibles = widget.root.catalogos.grados_catalogo.values
-        .expand((listaDeGrados) => listaDeGrados) // <--- Esto convierte el Map en una sola Lista
+        .expand((lista) => lista)
         .where((g) {
-      if (widget.selectedProfile.esGranLogia) {
-        return g.idGrado <= widget.selectedProfile.idGrado;
-      }
-      return g.Grupo == widget.selectedProfile.Grupo && 
-             g.idGrado <= widget.selectedProfile.idGrado;
+      if (widget.selectedProfile.esGranLogia) return g.idGrado <= widget.selectedProfile.idGrado;
+      return g.Grupo == widget.selectedProfile.Grupo && g.idGrado <= widget.selectedProfile.idGrado;
     }).toList();
 
     return Scaffold(
@@ -142,10 +145,7 @@ class _ActaCreateScreenState extends State<ActaCreateScreen> {
                       child: DropdownButtonFormField<int>(
                         value: _idGradoSeleccionado,
                         decoration: const InputDecoration(labelText: 'Grado del Acta', border: OutlineInputBorder()),
-                        items: gradosDisponibles.map((g) => DropdownMenuItem<int>(
-                        value: g.idGrado, 
-                        child: Text(g.Descripcion) // Usa g.descripcion (en minúscula) si tu modelo lo tiene así
-                        )).toList(),
+                        items: gradosDisponibles.map((g) => DropdownMenuItem(value: g.idGrado, child: Text(g.Descripcion))).toList(),
                         onChanged: (v) => setState(() => _idGradoSeleccionado = v),
                       ),
                     ),
@@ -154,14 +154,27 @@ class _ActaCreateScreenState extends State<ActaCreateScreen> {
               ],
             ),
           ),
-          ToolBar(controller: _controller, toolBarColor: Colors.grey[200]),
+          
+          // 1. Barra de herramientas actualizada para v11+
+          quill.QuillSimpleToolbar(
+            controller: _controller,
+          ),
+          
+          // 2. Editor actualizado para v11+
           Expanded(
-            child: QuillHtmlEditor(
-              controller: _controller,
-              hintText: 'Escribe el trazado de la tenida...',
-              minHeight: 400,
-              textStyle: const TextStyle(fontSize: 16),
-              padding: const EdgeInsets.all(16),
+            child: Container(
+              margin: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey.shade300),
+                color: Colors.white,
+              ),
+              // Envolvemos en Padding para reemplazar el que quitamos del config
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: quill.QuillEditor.basic(
+                  controller: _controller,
+                ),
+              ),
             ),
           ),
         ],
