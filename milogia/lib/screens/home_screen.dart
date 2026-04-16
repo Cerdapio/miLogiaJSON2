@@ -11,6 +11,7 @@ import 'package:milogia/services/notification_service.dart';
 import 'package:milogia/screens/app_drawer.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/user_model.dart';
+import 'credencial_screen.dart';
 // import 'actas_screen.dart'; // Importar Pantalla de Actas (REMOVED)
 
 
@@ -536,6 +537,22 @@ List<String> masonesFamosos = [
         backgroundColor: theme.primaryColor,
         iconTheme: IconThemeData(color: theme.secondaryColor),
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.badge, color: theme.secondaryColor),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => CredencialScreen(
+                    root: widget.root,
+                    selectedProfile: widget.selectedProfile,
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       drawer: AppDrawer(
         root: widget.root, 

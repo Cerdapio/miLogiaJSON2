@@ -6,6 +6,7 @@ import '../config/l10n.dart';
 import '../models/user_model.dart';
 import '../utils/dropdown_utils.dart'; 
 import 'app_drawer.dart'; 
+import 'package:milogia/screens/credencial_screen.dart';
 
 class ProfileEditScreen extends StatefulWidget {
   final RootModel root;
@@ -725,6 +726,22 @@ await _supabase
             backgroundColor: theme['bg'],
             elevation: 0,               
             iconTheme: IconThemeData(color: theme['text']),
+            actions: [
+              IconButton(
+                icon: Icon(Icons.badge, color: theme['accent']),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => CredencialScreen(
+                        root: widget.root,
+                        selectedProfile: widget.selectedProfile!,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
             bottom: TabBar(
               labelColor: theme['accent'],
               unselectedLabelColor: theme['text']?.withOpacity(0.7),
@@ -753,6 +770,22 @@ await _supabase
           backgroundColor: theme['bg'], 
           elevation: 0,                
           iconTheme: IconThemeData(color: theme['text']),
+          actions: [
+            IconButton(
+              icon: Icon(Icons.badge, color: theme['accent']),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => CredencialScreen(
+                      root: widget.root,
+                      selectedProfile: widget.selectedProfile!,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ],
         ),
         drawer: AppDrawer(root: widget.root, selectedProfile: widget.selectedProfile!),
         body: _buildPersonalInfoForm(theme),

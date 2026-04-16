@@ -13,6 +13,7 @@ import '../config/auth_config.dart';
 import '../config/l10n.dart';
 import 'home_screen.dart';
 import 'package:geolocator/geolocator.dart';
+import 'dart:developer';
 
 // Usamos la instancia global inicializada en main.dart
 final SupabaseClient supabase = Supabase.instance.client;
@@ -137,6 +138,7 @@ class _LoginScreenState extends State<LoginScreen> {
       }
       accessToken = authResponse.session!.accessToken;
       print(accessToken);
+
       final url = Uri.parse('$supabaseUrl/rest/v1/rpc/$rpcFunction');
 
       // **NUEVO: Obtener ubicación antes de llamar a sp_catcusuarios_v2**
@@ -172,6 +174,7 @@ class _LoginScreenState extends State<LoginScreen> {
       print(supabaseAnonKey);
       final resp = await http.post(url, headers: headers, body: json.encode(payload));
       print(resp.body);
+      log(jsonEncode(resp.body), name: 'LOGIN_JSON');
       if (resp.statusCode == 200) {
         final dynamic rawDecodedResponse = json.decode(resp.body);
         Map<String, dynamic>? processedDecodedResponse;

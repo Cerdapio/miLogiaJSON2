@@ -11,6 +11,7 @@ import 'app_drawer.dart';
 import 'documents_screen.dart';
 import 'package:cunning_document_scanner/cunning_document_scanner.dart';
 import 'package:milogia/config/l10n.dart';
+import 'package:milogia/screens/credencial_screen.dart';
 
 class RadioCreateScreen extends StatefulWidget {
   final RootModel root;
@@ -222,6 +223,22 @@ class _RadioCreateScreenState extends State<RadioCreateScreen> {
         backgroundColor: theme['bg'],
         foregroundColor: theme['text'],
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.badge, color: theme['accent']),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => CredencialScreen(
+                    root: widget.root,
+                    selectedProfile: widget.selectedProfile,
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       drawer: AppDrawer(root: widget.root, selectedProfile: widget.selectedProfile),
       body: _isLoading 

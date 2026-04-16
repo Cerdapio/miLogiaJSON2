@@ -275,8 +275,8 @@ class Documento {
         Fecha: json['Fecha'] ?? '',
         Descripcion: json['Descripcion'] ?? '',
         NombreCorto: json['NombreCorto'] ?? '',
-        idGrado: json['idGrado'] ?? '',
-        iddLogia: json['iddLogia'] ?? '',
+        idGrado: json['idGrado'] ?? 0,
+        iddLogia: json['iddLogia'] ?? 0,
         NombreLargo: json['NombreLargo'] ?? '',
       );
 
@@ -291,19 +291,19 @@ class Documento {
 }
 
 class PerfilOpcion {
-  String Grupo;
-  Colores colores;
-  int idGrado;
-  int idLogia;
-  int idPerfil;
-  List<int> permisos;
-  String Abreviatura;
-  String GradoNombre;
-  String LogiaNombre;
-  String Significado;
-  String Tratamiento;
-  String PerfilNombre;
-  bool esGranLogia; // NUEVO: Para identificar si el perfil es sobre una Gran Logia.
+  final String Grupo;
+  final Colores colores; // Usando tu clase Colores
+  final int idGrado;
+  final int idLogia;
+  final int idPerfil;
+  final String Abreviatura;
+  final int Grado;
+  final String GradoNombre;
+  final String LogiaNombre;
+  final String Significado;
+  final String Tratamiento;
+  final String PerfilNombre;
+  final bool esGranLogia;
 
   PerfilOpcion({
     required this.Grupo,
@@ -311,8 +311,8 @@ class PerfilOpcion {
     required this.idGrado,
     required this.idLogia,
     required this.idPerfil,
-    required this.permisos,
     required this.Abreviatura,
+    required this.Grado,
     required this.GradoNombre,
     required this.LogiaNombre,
     required this.Significado,
@@ -321,14 +321,16 @@ class PerfilOpcion {
     required this.esGranLogia,
   });
 
+  // Getter útil para el módulo de actas
+ 
   factory PerfilOpcion.fromJson(Map<String, dynamic> json) => PerfilOpcion(
         Grupo: json['Grupo'] ?? '',
         colores: Colores.fromJson(json['colores'] ?? {}),
         idGrado: json['idGrado'] ?? 0,
         idLogia: json['idLogia'] ?? 0,
         idPerfil: json['idPerfil'] ?? 0,
-        permisos: (json['permisos'] as List<dynamic>? ?? []).map((e) => (e ?? 0) as int).toList(),
         Abreviatura: json['Abreviatura'] ?? '',
+        Grado: json['Grado'] ?? '',
         GradoNombre: json['GradoNombre'] ?? '',
         LogiaNombre: json['LogiaNombre'] ?? '',
         Significado: json['Significado'] ?? '',
@@ -336,6 +338,7 @@ class PerfilOpcion {
         PerfilNombre: json['PerfilNombre'] ?? '',
         esGranLogia: json['esGranLogia'] ?? false,
       );
+  bool get esGradoSimbolico => Grupo == "Grados Simbólicos";
 
   Map<String, dynamic> toJson() => {
         'Grupo': Grupo,
@@ -343,8 +346,8 @@ class PerfilOpcion {
         'idGrado': idGrado,
         'idLogia': idLogia,
         'idPerfil': idPerfil,
-        'permisos': permisos,
         'Abreviatura': Abreviatura,
+        'Grado': Grado,
         'GradoNombre': GradoNombre,
         'LogiaNombre': LogiaNombre,
         'Significado': Significado,
@@ -352,8 +355,6 @@ class PerfilOpcion {
         'PerfilNombre': PerfilNombre,
         'esGranLogia': esGranLogia,
       };
-
-      
 }
 
 class Colores {
@@ -464,7 +465,7 @@ class Catalogos {
         'grados_catalogo': Map.from(grados_catalogo).map((k, v) => MapEntry<String, dynamic>(k, v.map((e) => e.toJson()).toList())),
         'perfiles_catalogo': perfiles_catalogo.map((e) => e.toJson()).toList(),
         'firmas_catalogo': firmas_catalogo.map((e) => e.toJson()).toList(),
-        'n ': logias_catalogo.map((e) => e.toJson()).toList(),
+        'logias_catalogo': logias_catalogo.map((e) => e.toJson()).toList(),
       };
 }
 
@@ -620,7 +621,7 @@ class DocumentosCatalogoDetalle {
         Grado: json['Grado'] ?? 0,
         NombreCorto: json['NombreCorto'] ?? '',
         NombreLargo: json['NombreLargo'] ?? '',
-        idConcepto: json['idConcepto'] ?? '',
+        idConcepto: json['idConcepto'] ?? 0,
       );
 
   Map<String, dynamic> toJson() => {
@@ -668,12 +669,14 @@ class ListaLogiasPorUsuario {
   String Nombre;
   int idUsuario;
   String FechaNacimiento;
+  String TipoSangre;
   List<MiembroPerfil> perfiles;
 
   ListaLogiasPorUsuario({
     required this.Nombre,
     required this.idUsuario,
     required this.FechaNacimiento,
+    required this.TipoSangre,
     required this.perfiles,
   });
 
@@ -681,6 +684,7 @@ class ListaLogiasPorUsuario {
         Nombre: json['Nombre'] ?? '',
         idUsuario: json['idUsuario'] ?? 0,
         FechaNacimiento: json['FechaNacimiento'] ?? '',
+        TipoSangre: json['TipoSangre'] ?? '',
         perfiles: (json['perfiles'] as List<dynamic>? ?? []).map((e) => MiembroPerfil.fromJson(e)).toList(),
       );
 
@@ -688,6 +692,7 @@ class ListaLogiasPorUsuario {
     'Nombre': Nombre, 
     'idUsuario': idUsuario, 
     'FechaNacimiento': FechaNacimiento, 
+    'TipoSangre':TipoSangre,
     'perfiles': perfiles.map((e) => e.toJson()).toList()
   };
 }
@@ -739,29 +744,35 @@ class PerfilCatalogo {
 
 // NUEVO MODELO PARA FIRMAS
 class Firma {
-    int idFirma;
-    int idLogia;
+    int iddFirma;
+    int iddLogia;
     String vm; // URL de la firma del Venerable Maestro
     String sec; // URL de la firma del Secretario
+    String orad; // URL de la firma del Orador
+    String vigencia; // vigencia de la firma
     bool activo;
 
     Firma({
-        required this.idFirma,
-        required this.idLogia,
+        required this.iddFirma,
+        required this.iddLogia,
         required this.vm,
         required this.sec,
+        required this.orad,
+        required this.vigencia,
         required this.activo,
     });
 
     factory Firma.fromJson(Map<String, dynamic> json) => Firma(
-        idFirma: json["idFirma"] ?? 0,
-        idLogia: json["idLogia"] ?? 0,
+        iddFirma: json["iddFirma"] ?? 0,
+        iddLogia: json["iddLogia"] ?? 0,
         vm: json["vm"] ?? '',
         sec: json["sec"] ?? '',
-        activo: json["activo"] ?? false,
+        orad: json["orad"] ?? '',
+        vigencia: json["Vigencia"] ?? '',
+        activo: json["Activo"] ?? false,
     );
 
-    Map<String, dynamic> toJson() => {"idFirma": idFirma, "idLogia": idLogia, "vm": vm, "sec": sec, "activo": activo};
+    Map<String, dynamic> toJson() => {"iddFirma": iddFirma, "iddLogia": iddLogia, "vm": vm, "sec": sec, "orad": orad, "Vigencia": vigencia, "Activo": activo};
 }
 
 // NUEVO MODELO PARA EL CATÁLOGO DE LOGIAS

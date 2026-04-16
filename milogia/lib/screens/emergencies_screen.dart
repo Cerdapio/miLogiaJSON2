@@ -14,6 +14,7 @@ import 'package:milogia/config/l10n.dart';
 import '../models/emergency_model.dart';
 import 'app_drawer.dart';
 import '../utils/dropdown_utils.dart';
+import 'package:milogia/screens/credencial_screen.dart';
 
 final _supabase = Supabase.instance.client;
 
@@ -528,6 +529,22 @@ class _EmergenciesScreenState extends State<EmergenciesScreen> {
         backgroundColor: c1,
         iconTheme: IconThemeData(color: c3),
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.badge, color: c4),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => CredencialScreen(
+                    root: widget.root,
+                    selectedProfile: widget.selectedProfile,
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       drawer: AppDrawer(
       root: widget.root, 

@@ -6,6 +6,7 @@ version: 1.0.0+1
 environment:
   sdk: ^3.9.2
 dependencies:
+  home_widget: ^0.7.0
   flutter:
     sdk: flutter
   firebase_core: ^4.3.0 # Asegúrate de tener la última versión
@@ -34,6 +35,16 @@ dependencies:
   uuid: ^4.5.1
   flutter_localizations:
     sdk: flutter
+  qr_flutter: ^4.1.0
+  sensors_plus: ^7.0.0
+  image: ^4.5.4
+  quill_html_editor: ^2.1.2
+  cryptography: ^2.7.0
+  crypto: ^3.0.3
+
+dependency_overrides:
+  uuid: ^4.5.1
+  file_picker: ^10.3.7
 
 dev_dependencies:
   flutter_test:

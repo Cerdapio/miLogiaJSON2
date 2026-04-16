@@ -99,6 +99,8 @@ class L10n {
   static String myDocuments(BuildContext context) => isEn(context) ? 'My Documents' : 'Mis Documentos';
   static String reportTransfer(BuildContext context) => isEn(context) ? 'Report Transfer' : 'Reportar Transferencia';
   static String emitRadio(BuildContext context) => isEn(context) ? 'Emit Radio' : 'Emitir Radio';
+  static String secretariat(BuildContext context) => isEn(context) ? 'Secretariat' : 'Secretaría';
+  static String bookOfMinutes(BuildContext context) => isEn(context) ? 'Book of Minutes' : 'Libro de actas';
   static String treasury(BuildContext context) => isEn(context) ? 'Treasury' : 'Tesorería';
   static String validateTransfers(BuildContext context) => isEn(context) ? 'Validate Transfers' : 'Validar Transferencias';
   static String lodgePaymentCash(BuildContext context) => isEn(context) ? 'Lodge Collection (Cash)' : 'Cobro en Logia (Efectivo)';

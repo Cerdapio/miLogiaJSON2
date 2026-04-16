@@ -10,6 +10,7 @@ import 'package:milogia/screens/app_drawer.dart';
 import 'package:milogia/screens/pago_screen.dart';
 import 'package:dio/dio.dart' as dio;
 import 'package:milogia/config/l10n.dart';
+import 'package:milogia/screens/credencial_screen.dart';
 
 class PaymentReportScreen extends StatefulWidget {
   final RootModel root;
@@ -220,6 +221,22 @@ class _PaymentReportScreenState extends State<PaymentReportScreen> {
         title: Text(L10n.paymentReportTitle(context), style: TextStyle(color: _theme.secondaryColor, fontWeight: FontWeight.bold)),
         backgroundColor: _theme.primaryColor,
         iconTheme: IconThemeData(color: _theme.secondaryColor),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.badge, color: _theme.secondaryColor),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => CredencialScreen(
+                    root: widget.root,
+                    selectedProfile: widget.selectedProfile,
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       drawer: AppDrawer(root: widget.root, selectedProfile: widget.selectedProfile),
       body: SingleChildScrollView(

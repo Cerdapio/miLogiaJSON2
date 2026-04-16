@@ -13,8 +13,7 @@ import '../models/attendance_model.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
-
-
+import 'package:milogia/screens/credencial_screen.dart';
 
 class DocumentsScreen extends StatefulWidget {
   final RootModel root;
@@ -794,6 +793,22 @@ class _DocumentsScreenState extends State<DocumentsScreen> with SingleTickerProv
             backgroundColor: theme['bg'],
             elevation: 0,
             iconTheme: IconThemeData(color: theme['text']),
+            actions: [
+              IconButton(
+                icon: Icon(Icons.badge, color: theme['accent']),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => CredencialScreen(
+                        root: widget.root,
+                        selectedProfile: widget.selectedProfile ?? widget.root.user.perfiles_opciones.first,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
             bottom: TabBar(
               labelColor: theme['accent'],
               unselectedLabelColor: theme['text']?.withOpacity(0.7),
@@ -832,6 +847,22 @@ class _DocumentsScreenState extends State<DocumentsScreen> with SingleTickerProv
         backgroundColor: theme['bg'],
         elevation: 0,
         iconTheme: IconThemeData(color: theme['text']),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.badge, color: theme['accent']),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => CredencialScreen(
+                    root: widget.root,
+                    selectedProfile: widget.selectedProfile ?? widget.root.user.perfiles_opciones.first,
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       drawer: AppDrawer(
         root: widget.root,

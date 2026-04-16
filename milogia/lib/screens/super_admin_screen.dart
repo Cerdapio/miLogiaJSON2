@@ -1,10 +1,16 @@
+import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:image/image.dart' as img;
 import 'home_screen.dart';
 import '../models/user_model.dart';
 import '../utils/dropdown_utils.dart';
 import '../config/auth_config.dart';
 import '../config/l10n.dart';
+import 'package:milogia/screens/credencial_screen.dart';
+import 'package:dio/dio.dart' as dio;
 
 class SuperAdminScreen extends StatefulWidget {
   final RootModel root;
@@ -54,11 +60,10 @@ class _SuperAdminScreenState extends State<SuperAdminScreen> {
     _newUserNameController.dispose();
     _newUserEmailController.dispose();
     _newUserPasswordController.dispose();
-    // Conceptos Controllers
     _conceptDescController.dispose();
-    _addConceptCostoController.dispose(); // NUEVO
-    // Documentos Controllers
+    _addConceptCostoController.dispose();
     _documentDescController.dispose();
+    _vigenciaController.dispose();
     super.dispose();
   }
 
@@ -79,9 +84,17 @@ class _SuperAdminScreenState extends State<SuperAdminScreen> {
 
   // --- Documentos State ---
   final _documentFormKey = GlobalKey<FormState>();
-  final _documentDescController = TextEditingController(); // Description (Category) or ShortName (Detail)
+  final _documentDescController = TextEditingController();
   bool _documentRequiresDesc = false;
   bool _documentRequiresGrade = false;
+
+  // --- Firmas State ---
+  final _vigenciaController = TextEditingController();
+  Uint8List? _firmaVmBytes;
+  Uint8List? _firmaSecBytes;
+  Uint8List? _firmaOradBytes;
+  bool _isUploadingFirmas = false;
+  final _imagePicker = ImagePicker();
   
   // Anti-duplicate lists (in-memory cache from RootModel)
   List<String> get _existingConcepts => widget.root.catalogos.conceptos_catalogo.map((c) => c.Descripcion).toList();
@@ -582,7 +595,7 @@ class _SuperAdminScreenState extends State<SuperAdminScreen> {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 3,
+      length: 4,
       child: Scaffold(
         backgroundColor: _primaryColor,
         appBar: AppBar(
@@ -602,23 +615,35 @@ class _SuperAdminScreenState extends State<SuperAdminScreen> {
           ),
           actions: [
             IconButton(
+              icon: Icon(Icons.badge, color: _secondaryColor),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => CredencialScreen(
+                      root: widget.root,
+                      selectedProfile: widget.selectedProfile,
+                    ),
+                  ),
+                );
+              },
+            ),
+            IconButton(
               icon: const Icon(Icons.switch_account, color: Colors.white),
               tooltip: L10n.switchProfileTooltip(context),
               onPressed: _showSwitchProfileDialog,
             ),
           ],
           bottom: TabBar(
-            isScrollable: true, // Allow scrolling for 4 tabs
+            isScrollable: true,
             indicatorColor: _secondaryColor,
             labelColor: _secondaryColor,
             unselectedLabelColor: Colors.white70,
             tabs: [
               Tab(icon: const Icon(Icons.business), text: L10n.lodgesTab(context)),
               Tab(icon: const Icon(Icons.people), text: L10n.usersTab(context)),
-              // Nuevos Tabs
-              Tab(icon: const Icon(Icons.monetization_on), text: L10n.conceptsLabel(context).replaceAll(':', '')), 
-              // Tab(icon: const Icon(Icons.description), text: L10n.myDocumentsTitle(context)), // OCULTADO TEMPORALMENTE
-              // const Tab(icon: Icon(Icons.copy), text: "Machotes"), // REMOVED
+              Tab(icon: const Icon(Icons.monetization_on), text: L10n.conceptsLabel(context).replaceAll(':', '')),
+              const Tab(icon: Icon(Icons.draw), text: 'Firmas'),
             ],
           ),
         ),
@@ -643,7 +668,7 @@ class _SuperAdminScreenState extends State<SuperAdminScreen> {
                   _buildLodgeManagement(),
                   _buildUserManagement(),
                   _buildConceptManagement(),
-                  // _buildDocumentManagement(), // OCULTADO TEMPORALMENTE
+                  _buildFirmasTab(),
                 ],
               ),
             ),
@@ -652,6 +677,314 @@ class _SuperAdminScreenState extends State<SuperAdminScreen> {
       ),
     );
   }
+
+  // ─────────────────────── FIRMAS ───────────────────────
+
+  /// Captura una foto con la cámara trasera a máxima calidad y retira el fondo blanco.
+  Future<void> _capturarFirma(String rol) async {
+    // Primero mostramos instrucciones
+    final proceder = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Instrucciones de Captura'),
+        content: const Text(
+          'Por favor, firme en una hoja completamente BLANCA usando tinta AZUL OSCURA.\n\n'
+          '• Use buena iluminación (preferentemente luz natural).\n'
+          '• El flash se encenderá automáticamente.\n'
+          '• La firma debe ocupar la mayor parte de la hoja.\n'
+          '• Al capturar, mantenga la hoja plana y sin sombras.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
+          ElevatedButton(onPressed: () => Navigator.pop(context, true), child: const Text('Tomar Foto')),
+        ],
+      ),
+    );
+    if (proceder != true) return;
+
+    final picked = await _imagePicker.pickImage(
+      source: ImageSource.camera,
+      preferredCameraDevice: CameraDevice.rear,
+      imageQuality: 100,  // máxima calidad
+    );
+    if (picked == null) return;
+
+    setState(() => _isUploadingFirmas = true);
+    try {
+      final rawBytes = await File(picked.path).readAsBytes();
+      final processed = await _removeBackground(rawBytes);
+
+      // Previsualizar antes de aceptar
+      if (!mounted) return;
+      final aceptar = await showDialog<bool>(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: Text('Firma: $rol'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('¿La firma se ve correctamente?'),
+              const SizedBox(height: 12),
+              Container(
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey),
+                  color: Colors.white,
+                ),
+                height: 150,
+                child: Image.memory(processed, fit: BoxFit.contain),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Repetir')),
+            ElevatedButton(onPressed: () => Navigator.pop(context, true), child: const Text('Aceptar')),
+          ],
+        ),
+      );
+      if (aceptar != true) return;
+
+      setState(() {
+        if (rol == 'V.M.') _firmaVmBytes = processed;
+        if (rol == 'Secretario') _firmaSecBytes = processed;
+        if (rol == 'Orador') _firmaOradBytes = processed;
+      });
+    } finally {
+      if (mounted) setState(() => _isUploadingFirmas = false);
+    }
+  }
+
+  /// Remueve el fondo blanco/claro de la imagen dejando solo los píxeles oscuros/azules como PNG transparente.
+  Future<Uint8List> _removeBackground(Uint8List rawBytes) async {
+    // Decodificar imagen
+    final decoded = img.decodeImage(rawBytes);
+    if (decoded == null) throw Exception('No se pudo decodificar la imagen.');
+
+    // Umbral de "blancura": si R>200 Y G>200 Y B>200, se convierte a transparente.
+    for (int y = 0; y < decoded.height; y++) {
+      for (int x = 0; x < decoded.width; x++) {
+        final pixel = decoded.getPixel(x, y);
+        final r = pixel.r.toInt();
+        final g = pixel.g.toInt();
+        final b = pixel.b.toInt();
+        if (r > 100 && g > 100 && b > 200) {
+          // Fondo blanco → transparente
+          decoded.setPixel(x, y, img.ColorRgba8(0, 0, 0, 0));
+        } else {
+          // Oscurecer ligeramente la firma para mejor contraste
+          final nr = (r * 0.9).round().clamp(0, 255);
+          final ng = (g * 0.9).round().clamp(0, 255);
+          final nb = (b * 0.9).round().clamp(0, 255); // conservar azul
+          decoded.setPixel(x, y, img.ColorRgba8(nr, ng, nb, 255));
+        }
+      }
+    }
+
+    return Uint8List.fromList(img.encodePng(decoded));
+  }
+
+  /// Sube las 3 firmas al bucket `firmas/[iddlogia]/` e inserta el registro en `catcfirmas`.
+  Future<void> _guardarFirmas() async {
+  if (_firmaVmBytes == null || _firmaSecBytes == null || _firmaOradBytes == null) {
+    _showErrorDialog('Faltan Firmas', 'Debe capturar las 3 firmas (V.M., Secretario y Orador) antes de guardar.');
+    return;
+  }
+  if (_vigenciaController.text.trim().isEmpty) {
+    _showErrorDialog('Vigencia requerida', 'Ingrese el ejercicio/vigencia (ej. 2024-2026).');
+    return;
+  }
+
+  setState(() => _isUploadingFirmas = true);
+  try {
+    final iddlogia = widget.selectedProfile.idLogia.toString(); 
+    
+    // Asegúrate de tener definida la variable supabaseUrl igual que en tu otro archivo.
+    // Si la tienes en un archivo de constantes, impórtala, o defínela aquí.
+    final functionUrl = '$supabaseUrl/functions/v1/upload-radio'; 
+    final headers = {
+      'Authorization': 'Bearer ${_supabase.auth.currentSession?.accessToken}',
+    };
+
+    // 1. Nueva subfunción de subida usando tu Edge Function y Dio
+    Future<String> uploadViaEdgeFunction(String filename, Uint8List bytes) async {
+      final formData = dio.FormData();
+      formData.files.add(MapEntry(
+        'file', 
+        dio.MultipartFile.fromBytes(bytes, filename: filename)
+      ));
+      
+      // Enviamos el ID de la logia
+      formData.fields.add(MapEntry('logiaId', iddlogia));
+      // ¡Importante! Le decimos a la Edge Function que lo meta en la carpeta 'firmas'
+      formData.fields.add(const MapEntry('folder', 'firmas')); 
+
+      final dioClient = dio.Dio();
+      final response = await dioClient.post(
+        functionUrl,
+        data: formData,
+        options: dio.Options(headers: headers),
+      );
+
+      if (response.statusCode == 200) {
+        // La Edge Function nos devuelve la URL pública directa
+        return response.data['publicUrl'];
+      } else {
+        throw Exception('Error al subir $filename: ${response.data['error']}');
+      }
+    }
+
+    // 2. Subir las 3 firmas
+    final vmUrl   = await uploadViaEdgeFunction('vm_firma.png',   _firmaVmBytes!);
+    final secUrl  = await uploadViaEdgeFunction('sec_firma.png',  _firmaSecBytes!);
+    final oradUrl = await uploadViaEdgeFunction('orad_firma.png', _firmaOradBytes!);
+
+    // 3. Inactivar firmas anteriores de esta logia en la base de datos
+    await _supabase
+        .from('catcFirmas')
+        .update({'Activo': false})
+        .eq('iddLogia', widget.selectedProfile.idLogia);
+
+    // 4. Insertar nuevo registro con las URLs devueltas por la Edge Function
+    await _supabase.from('catcFirmas').insert({
+      'iddLogia': widget.selectedProfile.idLogia,
+      'vm':       vmUrl,
+      'sec':      secUrl,
+      'orad':     oradUrl,
+      'Vigencia': _vigenciaController.text.trim(),
+      'Activo':   true,
+    });
+
+    // 5. Limpiar UI
+    setState(() {
+      _firmaVmBytes   = null;
+      _firmaSecBytes  = null;
+      _firmaOradBytes = null;
+      _vigenciaController.clear();
+    });
+    
+    _showSuccessDialog('¡Éxito!', 'Las firmas se guardaron correctamente. Las anteriores quedaron inactivas.');
+    
+  } catch (e) {
+    // Como Dio puede lanzar excepciones diferentes a Supabase, atrapamos todo genéricamente
+    _showErrorDialog('Error al procesar', e.toString());
+  } finally {
+    if (mounted) setState(() => _isUploadingFirmas = false);
+  }
+}
+
+  Widget _buildFirmasTab() {
+    Widget firmaCard(String rol, Uint8List? bytes, VoidCallback onTap) {
+      return Card(
+        elevation: 3,
+        color: _formBackgroundColor,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              children: [
+                Text(rol, style: TextStyle(fontWeight: FontWeight.bold, color: _formTextColor, fontSize: 14)),
+                const SizedBox(height: 8),
+                Container(
+                  height: 100,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    border: Border.all(color: bytes != null ? Colors.green : Colors.grey.shade400),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: bytes != null
+                      ? Image.memory(bytes, fit: BoxFit.contain)
+                      : Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.camera_alt, color: _secondaryColor, size: 32),
+                            const SizedBox(height: 4),
+                            Text('Toca para capturar', style: TextStyle(color: _secondaryColor, fontSize: 12)),
+                          ],
+                        ),
+                ),
+                if (bytes != null) ...
+                  [const SizedBox(height: 6), Text('✔ Capturada', style: TextStyle(color: Colors.green, fontSize: 11))],
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Encabezado
+          Text('Firmas Oficiales de la Logia',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: _formTextColor)),
+          const SizedBox(height: 4),
+          Text('Logia: ${widget.selectedProfile.LogiaNombre}',
+              style: TextStyle(fontSize: 12, color: _secondaryColor)),
+          const Divider(height: 24),
+
+          // Instrucción general
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.amber.shade50,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.amber.shade300),
+            ),
+            child: const Text(
+              '⚠ Al guardar nuevas firmas, las anteriores serán marcadas como inactivas automáticamente.',
+              style: TextStyle(fontSize: 12, color: Colors.brown),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Tarjetas de Firma
+          firmaCard('V⸫M⸫', _firmaVmBytes, () => _capturarFirma('V.M.')),
+          const SizedBox(height: 12),
+          firmaCard('Sec⸫', _firmaSecBytes, () => _capturarFirma('Secretario')),
+          const SizedBox(height: 12),
+          firmaCard('Orad⸫', _firmaOradBytes, () => _capturarFirma('Orador')),
+          const SizedBox(height: 20),
+
+          // Campo de vigencia
+          TextFormField(
+            controller: _vigenciaController,
+            style: TextStyle(color: _formTextColor),
+            decoration: InputDecoration(
+              labelText: 'Vigencia (Ejercicio, ej. ${DateTime.now().year - 3}-${DateTime.now().year})',
+              labelStyle: TextStyle(color: _secondaryColor),
+              prefixIcon: Icon(Icons.calendar_today, color: _secondaryColor),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              filled: true,
+              fillColor: Colors.grey.shade50,
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // Botón Guardar
+          ElevatedButton.icon(
+            onPressed: _isUploadingFirmas ? null : _guardarFirmas,
+            icon: _isUploadingFirmas
+                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                : const Icon(Icons.cloud_upload, color: Colors.white),
+            label: Text(_isUploadingFirmas ? 'Guardando...' : 'Guardar Firmas',
+                style: const TextStyle(color: Colors.white)),
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              backgroundColor: _secondaryColor,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ──────────────────────────────────────────────────────
 
   void _showErrorDialog(String title, String msg) {
     if (!mounted) return;

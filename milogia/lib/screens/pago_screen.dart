@@ -6,6 +6,8 @@ import '../models/pago_model.dart';
 import '../config/auth_config.dart'; 
 import '../config/l10n.dart';
 import 'app_drawer.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:milogia/screens/credencial_screen.dart';
 
 class PagoConcepto {
   final ConceptoCatalogo concepto;
@@ -520,6 +522,31 @@ print('idUsuario: ${widget.root.user.idUsuario}, Importe: $totalImporte, Fecha: 
     _showErrorDialog('En desarrollo', 'El módulo de carga de archivos está en construcción.');
   }
 
+  /// Genera un enlace de cobro compatible con CoDi (simulado/en construcción)
+  String _generateCoDiLink(int idPago, double importe) {
+    _showErrorDialog('En desarrollo', 'El módulo de generación de referencias desde la app está en construcción.');
+    //// FORMATO SUGERIDO (Ejemplo Base):
+    //// Esquema real depende del banco/integrador (ej. Banxico, BBVA, etc.)
+    //// Aquí usamos una estructura genérica basada en parámetros URL.
+    
+    //final concepto = "Pago Ref $idPago";
+    //final cuenta = _getCuentaBancariaForLogia();
+    
+    //// NOTA: Para producción, esto debe ajustarse al esquema oficial de CoDi
+    //// que suele ser un JSON cifrado o un deep link específico de la app bancaria.
+    //// Ejemplo ficticio para abrir app bancaria con datos:
+    //final uri = Uri.parse("https://vía-codi.banxico.org.mx/m")
+        //.replace(queryParameters: {
+      //"am": importe.toStringAsFixed(2), // Amount
+      //"ref": idPago.toString(),         // Reference
+      //"desc": concepto,                 // Concept
+      //"acc": cuenta,                    // Account
+    //});
+    //print(uri.toString());
+    return "https://vía-codi.banxico.org.mx/m";
+    
+  }
+
   // --- DIÁLOGOS ---
 
   void _showPaymentSlipDialog(int idPago, double importe) {
@@ -550,7 +577,44 @@ print('idUsuario: ${widget.root.user.idUsuario}, Importe: $totalImporte, Fecha: 
                 // Aquí se usa la cuenta ya filtrada
                 _infoRow('Cuenta destino:', accountNumber, themeColors['text']!),
                 _infoRow('Importe a pagar:', formattedImporte, themeColors['text']!),
-                const Divider(),
+                const SizedBox(height: 16),
+                
+                // --- BOTÓN CODI ---
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue[800], // Color distintivo para CoDi/Banco
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    icon: const Icon(Icons.qr_code_2, size: 24),
+                    label: const Text("Pagar con CoDi (Abrir App Banco)"),
+                    onPressed: () async {
+                      final url = _generateCoDiLink(idPago, importe);
+                      final uri = Uri.parse(url);
+                      
+                      try {
+                        // Intentamos lanzar el link. 
+                        // launchUrl con mode externalApplication intenta abrir apps fuera de Flutter
+                        if (await canLaunchUrl(uri)) {
+                          await launchUrl(uri, mode: LaunchMode.externalApplication);
+                        } else {
+                          // Fallback por si no hay app que lo soporte o es un esquema raro
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text("No se pudo abrir la aplicación de banco.")),
+                            );
+                          }
+                        }
+                      } catch (e) {
+                         debugPrint("Error lanzando CoDi: $e");
+                      }
+                    },
+                  ),
+                ),
+                
+                const Divider(height: 24),
                 Text(
                   L10n.paymentInstruction(context),
                   textAlign: TextAlign.center,
@@ -847,6 +911,22 @@ Future<void> _showPaymentDetailDialog(PagoModel pago) async {
             backgroundColor: theme['bg'],
             elevation: 0,
             iconTheme: IconThemeData(color: theme['text']),
+            actions: [
+              IconButton(
+                icon: Icon(Icons.badge, color: theme['accent']),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => CredencialScreen(
+                        root: widget.root,
+                        selectedProfile: widget.selectedProfile,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
             bottom: TabBar(
               labelColor: theme['accent'],
               unselectedLabelColor: theme['text']?.withOpacity(0.6),
@@ -884,6 +964,22 @@ Future<void> _showPaymentDetailDialog(PagoModel pago) async {
         backgroundColor: theme['bg'],
         elevation: 0,
         iconTheme: IconThemeData(color: theme['text']),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.badge, color: theme['accent']),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => CredencialScreen(
+                    root: widget.root,
+                    selectedProfile: widget.selectedProfile,
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       drawer: AppDrawer(
         root: widget.root, 
@@ -1045,7 +1141,7 @@ Future<void> _showPaymentDetailDialog(PagoModel pago) async {
                     final r = _reportesPendientes[index];
                     final miembro = widget.root.catalogos.listaLogiasPorUsuario.firstWhere(
                       (m) => m.idUsuario == r.idUsuario,
-                      orElse: () => ListaLogiasPorUsuario(Nombre: L10n.isEn(context) ? 'Unknown User' : 'Usuario Desconocido', idUsuario: 0, FechaNacimiento: '', perfiles: []),
+                      orElse: () => ListaLogiasPorUsuario(Nombre: L10n.isEn(context) ? 'Unknown User' : 'Usuario Desconocido', idUsuario: 0, FechaNacimiento: '', TipoSangre: '', perfiles: []),
                     );
 
                     return Card(

@@ -12,6 +12,7 @@ import 'profile_edit_screen.dart';
 import 'super_admin_screen.dart'; // Importar la nueva pantalla
 import 'radio_create_screen.dart'; 
 import 'payment_report_screen.dart';
+import 'acta_create_screen.dart';
 // Integrated into PagoScreen:
 // import 'payment_validator_screen.dart';
 // import 'cash_collector_screen.dart';
@@ -167,14 +168,60 @@ class AppDrawer extends StatelessWidget {
                   ),
 
                   // --- OPCIÓN SECRETARIO (Perfil 5) ---
-                  if (selectedProfile.idPerfil == 5)
-                    _buildMenuItem(
-                      context: context,
-                      icon: Icons.broadcast_on_personal,
-                      text: L10n.emitRadio(context),
-                      theme: theme,
-                      onTap: () => _navigateTo(context, RadioCreateScreen(root: root, selectedProfile: selectedProfile)),
+                  if (selectedProfile.idPerfil == 5) ...[
+                    const Divider(),
+                    ExpansionTile(
+                      leading: Icon(Icons.edit_note, color: theme['accent']),
+                      title: Text(
+                        L10n.secretariat(context), // Puedes usar L10n para internacionalización
+                        style: TextStyle(
+                          color: theme['text'],
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      iconColor: theme['accent'],
+                      collapsedIconColor: theme['text']?.withOpacity(0.7),
+                      childrenPadding: const EdgeInsets.only(left: 20), // Indentación para submenú
+                      children: [
+                        _buildMenuItem(
+                          context: context,
+                          icon: Icons.history_edu,
+                          text: L10n.bookOfMinutes(context),
+                          theme: theme,
+                          onTap: () {
+                            Navigator.pop(context); // Cerrar drawer
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ActaCreateScreen(
+                                  root: root,
+                                  selectedProfile: selectedProfile,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                        _buildMenuItem(
+                          context: context,
+                          icon: Icons.radio,
+                          text: "Emitir Radios",
+                          theme: theme,
+                          onTap: () {
+                            Navigator.pop(context);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => RadioCreateScreen(
+                                  root: root,
+                                  selectedProfile: selectedProfile,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
                     ),
+                  ],
 
                   // --- OPCIÓN VENERABLE (Perfil 1) ---
                   if (selectedProfile.idPerfil == 1)
