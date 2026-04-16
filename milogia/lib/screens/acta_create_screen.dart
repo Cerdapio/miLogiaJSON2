@@ -154,13 +154,19 @@ class _ActaCreateScreenState extends State<ActaCreateScreen> {
               ],
             ),
           ),
-          
-          // 1. Barra de herramientas actualizada para v11+
+         // 1. Barra de herramientas
           quill.QuillSimpleToolbar(
             controller: _controller,
+            // (Opcional) Puedes limitar las opciones si quieres que se vea más limpia
+            configurations: const quill.QuillSimpleToolbarConfigurations(
+               showFontFamily: false,
+               showSearchButton: false,
+               showSubscript: false,
+               showSuperscript: false,
+            ),
           ),
           
-          // 2. Editor actualizado para v11+
+          // 2. Editor
           Expanded(
             child: Container(
               margin: const EdgeInsets.all(12),
@@ -168,11 +174,17 @@ class _ActaCreateScreenState extends State<ActaCreateScreen> {
                 border: Border.all(color: Colors.grey.shade300),
                 color: Colors.white,
               ),
-              // Envolvemos en Padding para reemplazar el que quitamos del config
+              // IMPORTANTE: Aseguramos que el editor tome el espacio
               child: Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: quill.QuillEditor.basic(
                   controller: _controller,
+                  configurations: const quill.QuillEditorConfigurations(
+                    // Estas tres propiedades son CLAVE para que no se colapse:
+                    autoFocus: false,
+                    expands: true, 
+                    padding: EdgeInsets.all(8),
+                  ),
                 ),
               ),
             ),
